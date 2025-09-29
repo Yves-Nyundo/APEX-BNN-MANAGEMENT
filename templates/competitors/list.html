@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Competitor List{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+
+  <!-- 📊 Dashboard Summary -->
+  <div class="grid grid-cols-3 gap-6 mb-8">
+    <div class="bg-white shadow rounded p-4">
+      <h2 class="text-sm text-gray-500">Total Competitors</h2>
+      <p class="text-2xl font-bold text-gray-800">{{ total_count }}</p>
+    </div>
+    <div class="bg-white shadow rounded p-4">
+      <h2 class="text-sm text-gray-500">Average Bids</h2>
+      <p class="text-2xl font-bold text-gray-800">{{ avg_bids }}</p>
+    </div>
+    <div class="bg-white shadow rounded p-4 flex items-center justify-between">
+      <h2 class="text-sm text-gray-500">Export</h2>
+      <a href="{{ url_for('export_competitors') }}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">CSV</a>
+    </div>
+  </div>
+  <!-- ➕ Add Competitor Button -->
+  <div class="flex justify-end mb-4">
+    <a href="{{ url_for('add_competitor') }}"
+      class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+      + Add Competitor
+    </a>
+  </div>
+
+  <!-- 🔍 Filter Form -->
+  <form method="GET" class="bg-white shadow rounded p-6 mb-6 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {{ form.search.label(class="text-sm text-gray-700") }}
+      {{ form.search(class="w-full border rounded p-2") }}
+
+      {{ form.location.label(class="text-sm text-gray-700") }}
+      {{ form.location(class="w-full border rounded p-2") }}
+
+      {{ form.min_bids.label(class="text-sm text-gray-700") }}
+      {{ form.min_bids(class="w-full border rounded p-2", placeholder="Min Bids") }}
+
+      {{ form.max_bids.label(class="text-sm text-gray-700") }}
+      {{ form.max_bids(class="w-full border rounded p-2", placeholder="Max Bids") }}
+    </div>
+    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Apply Filters</button>
+  </form>
+
+  <!-- 📋 Competitor Table -->
+  <div class="overflow-x-auto bg-white shadow rounded-lg">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Name</th>
+          <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Sector</th>
+          <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Location</th>
+          <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Email</th>
+          <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Website</th>
+          <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Bid Count</th>
+          <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {% for competitor in competitors.items %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3">{{ competitor.name }}</td>
+          <td class="px-4 py-3">{{ competitor.sector or '-' }}</td>
+          <td class="px-4 py-3">{{ competitor.location or '-' }}</td>
+          <td class="px-4 py-3">{{ competitor.contact_email or '-' }}</td>
+          <td class="px-4 py-3">
+            {% if competitor.website %}
+              <a href="{{ competitor.website }}" class="text-blue-600 hover:underline" target="_blank">Visit</a>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">{{ competitor.bid_count }}</td>
+          <td class="px-4 py-3 space-x-2">
+            <a href="{{ url_for('edit_competitor', competitor_id=competitor.id) }}" class="text-blue-600 hover:underline">Edit</a>
+            <form action="{{ url_for('delete_competitor', competitor_id=competitor.id) }}" method="POST" class="inline">
+              {{ delete_form.hidden_tag() }}
+              <button type="submit" class="text-red-600 hover:underline"
+                      onclick="return confirm('Delete {{ competitor.name }}?')">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="px-4 py-6 text-center text-gray-500">No competitors found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 📄 Pagination -->
+  <div class="mt-6 flex justify-between items-center text-sm text-gray-600">
+    {% if competitors.has_prev %}
+      <a href="{{ url_for('list_competitors', page=competitors.prev_num) }}" class="text-blue-600 hover:underline">Previous</a>
+    {% endif %}
+    <span>Page {{ competitors.page }} of {{ competitors.pages }}</span>
+    {% if competitors.has_next %}
+      <a href="{{ url_for('list_competitors', page=competitors.next_num) }}" class="text-blue-600 hover:underline">Next</a>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

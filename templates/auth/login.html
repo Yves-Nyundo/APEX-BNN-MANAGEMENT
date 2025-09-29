@@ -1,0 +1,52 @@
+<!-- templates/auth/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - APEX BNN Services</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+  <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+    <h1 class="text-2xl font-bold text-center mb-6">Login to APEX BNN Services</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="p-2 mb-4 text-white rounded {% if category == 'error' %}bg-red-500{% elif category == 'success' %}bg-green-500{% else %}bg-blue-500{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+      {{ form.hidden_tag() }}  <!-- ✅ This renders the CSRF token correctly -->
+
+      <div class="mb-4">
+        {{ form.username.label(class="block mb-1") }}
+        {{ form.username(class="w-full border p-2 rounded", placeholder="Enter your username") }}
+        {% if form.username.errors %}
+          {% for error in form.username.errors %}
+            <span class="text-red-500 text-xs">{{ error }}</span>
+          {% endfor %}
+        {% endif %}
+      </div>
+
+      <div class="mb-6">
+        {{ form.password.label(class="block mb-1") }}
+        {{ form.password(class="w-full border p-2 rounded", placeholder="Enter your password") }}
+        {% if form.password.errors %}
+          {% for error in form.password.errors %}
+            <span class="text-red-500 text-xs">{{ error }}</span>
+          {% endfor %}
+        {% endif %}
+      </div>
+
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+        Login
+      </button>
+    </form>
+  </div>
+</body>
+</html>

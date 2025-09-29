@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Edit Product/Service {% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Edit Product or Service</h1>
+
+<form method="POST" class="space-y-6">
+  {{ form.hidden_tag() }}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <label class="block font-medium mb-1">Name *</label>
+      {{ form.name(class="w-full border rounded p-2") }}
+    </div>
+    <div>
+      <label class="block font-medium mb-1">Category</label>
+      {{ form.category(class="w-full border rounded p-2") }}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <label class="block font-medium mb-1">Standard Price ($)</label>
+      {{ form.standard_price(class="w-full border rounded p-2") }}
+    </div>
+    <div>
+      <label class="block font-medium mb-1">COGS ($)</label>
+      {{ form.cogs(class="w-full border rounded p-2") }}
+    </div>
+  </div>
+
+  <div>
+    <label class="block font-medium mb-1">Description</label>
+    {{ form.description(class="w-full border rounded p-2", rows="3") }}
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <label class="block font-medium mb-1">Currency</label>
+      {{ form.currency(class="w-full border rounded p-2") }}
+    </div>
+    <div class="flex items-center mt-6">
+      {{ form.is_active() }}
+      <label class="ml-2">Active</label>
+    </div>
+  </div>
+
+  <div class="flex space-x-4">
+    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">Update Product/Service</button>
+    <a href="{{ url_for('list_products_services') }}" class="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700">Cancel</a>
+  </div>
+</form>
+{% endblock %}
+

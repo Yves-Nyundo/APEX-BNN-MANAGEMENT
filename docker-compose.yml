@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - FLASK_ENV=development
+      - AWS_ACCESS_KEY_ID=your-key
+      - AWS_SECRET_ACCESS_KEY=your-secret
+      - AWS_S3_BUCKET=your-bucket
+      - MAIL_USERNAME=you@gmail.com
+      - MAIL_PASSWORD=your-app-password
+    volumes:
+      - ./uploads:/app/uploads

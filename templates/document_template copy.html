@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ invoice.document_type | title }} {{ invoice.invoice_number }}</title>
+  <style>
+    /* Base styles */
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      color: #333;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      position: relative;
+    }
+
+    body.delivery-note {
+      /* Optional styling for delivery notes */
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 30px;
+      box-sizing: border-box;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Watermark background */
+    .watermark {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      text-align: center;
+      opacity: 0.25;
+    }
+
+    .watermark img {
+      width: 60%;
+      margin-top: 100px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #2c3e50;
+      padding-bottom: 10px;
+    }
+
+    .company-info {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .client-info {
+      text-align: right;
+    }
+
+    /* Document Type */
+    .doc-type {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #e74c3c;
+      margin: 15px 0;
+      text-transform: uppercase;
+    }
+
+    /* Document Meta */
+    .doc-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    /* Items Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      word-wrap: break-word;
+    }
+
+    th, td {
+      padding: 8px;
+      vertical-align: top;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    /* Amounts */
+    .amounts {
+      text-align: right;
+      margin-top: 30px;
+    }
+
+    /* Signature with Stamp Overlay */
+    .signature-overlay {
+      position: relative;
+      display: inline-block;
+      width: 200px;
+      height: 200px;
+      margin: auto;
+    }
+
+    .signature-overlay img.signature {
+      position: absolute;
+      top: 0%;
+      left: 0%;
+      transform: translate(-50%, -50%);
+      max-height: 100%;
+      max-width: 100%;
+      z-index: 2;
+    }
+
+    .signature-overlay img.stamp {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.8;
+      z-index: 1;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 60px;
+      text-align: center;
+      font-size: 12px;
+      color: #7f8c8d;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body class="{{ 'delivery-note' if invoice.document_type == 'delivery_note' else '' }}">
+
+  {% if logo_path %}
+    <div class="watermark">
+      <img src="file:///Users/macbookpro/Desktop/APEX_MANAGEMENT_app/static/images/logo.png" alt="Company Logo" style="width:150px;">
+    </div>
+  {% endif %}
+
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="company-info">
+        <strong>APEX BNN Services</strong><br>
+        Kapenda 89, Makutano<br>
+        Lubumbashi Commune, Haut-Katanga<br>
+        {% if company_settings.phone %}{{ company_settings.phone }}<br>{% endif %}
+        {% if company_settings.email %}{{ company_settings.email }}<br>{% endif %}
+      </div>
+      <div class="client-info">
+        <strong>{{ invoice.client.name }}</strong><br>
+        {{ invoice.client.address | replace('\n', '<br>') | safe }}<br>
+        {% if invoice.client.email %}{{ invoice.client.email }}<br>{% endif %}
+      </div>
+    </div>
+
+    <!-- Document Type -->
+    <div class="doc-type">
+      {{ invoice.document_type | replace('_', ' ') | title }}
+    </div>
+
+    <!-- Document Meta -->
+    <div class="doc-meta">
+      <div><strong>Document No:</strong> {{ invoice.invoice_number }}</div>
+      <div><strong>PO Number:</strong> {{ invoice.po_number or '-' }}</div>
+      <div><strong>Date:</strong> {{ invoice.date_created.strftime('%Y-%m-%d') }}</div>
+    </div>
+
+    <!-- Items Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Qty</th>
+          <th>Unit Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in invoice["items"] %}
+          <tr>
+            <td>{{ item.description }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>${{ '%.2f'|format(item.unit_price) }}</td>
+            <td>${{ '%.2f'|format(item.total_price) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Amounts -->
+    <div class="amounts">
+      <p><strong>Subtotal:</strong> ${{ '%.2f'|format(invoice.total_amount - invoice.vat_amount) }}</p>
+      <p><strong>VAT ({{ invoice.vat_rate }}%):</strong> ${{ '%.2f'|format(invoice.vat_amount) }}</p>
+      <p><strong>TOTAL:</strong> ${{ '%.2f'|format(invoice.total_amount) }}</p>
+    </div>
+    
+    <!-- Signature with Stamp Overlay -->
+    <div class="signature-overlay">
+      {% if signature_path %}
+        <img src="{{ signature_path }}" alt="Signature" class="signature">
+      {% endif %}
+      {% if stamp_path %}
+        <img src="{{ stamp_path }}" alt="Stamp" class="stamp">
+      {% endif %}
+      <p style="text-align:center; margin-top:5px;">
+        {{ company_settings.signing_person_name or 'Authorized Signatory' }}<br>
+        {{ company_settings.signing_person_function or 'Finance Manager' }}
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      APEX BNN Services - Professional Services & Procurement
+    </div>
+
+  </div>
+</body>
+</html>

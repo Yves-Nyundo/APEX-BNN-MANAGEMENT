@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Procurement Items{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Procurement Items</h1>
+
+<a href="{{ url_for('add_procurement_item') }}" class="bg-orange-600 text-white px-4 py-2 rounded mb-4 inline-block">
+  + Add Procurement Item
+</a>
+
+{% if items %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full bg-white rounded-lg shadow">
+      <thead class="bg-gray-200">
+        <tr>
+          {% for header in [
+            'Item Name', 'Supplier', 'Purchase Price', 'Shipping Cost', 'Total Cost',
+            'Shipping Mode', 'Purchase Date', 'Expected Arrival', 'Status', 'Actions'
+          ] %}
+            <th class="px-4 py-2">{{ header }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="px-4 py-2">{{ item.name }}</td>
+          <td class="px-4 py-2">{{ item.supplier.name if item.supplier else 'N/A' }}</td>
+          <td class="px-4 py-2">{{ item.currency }} {{ "%.2f"|format(item.purchase_price) }}</td>
+          <td class="px-4 py-2">{{ item.currency }} {{ "%.2f"|format(item.shipping_cost) }}</td>
+          <td class="px-4 py-2 font-medium">{{ item.currency }} {{ "%.2f"|format(item.total_cost) }}</td>
+          <td class="px-4 py-2 capitalize">{{ item.shipping_mode }}</td>
+          <td class="px-4 py-2">{{ item.purchase_date.strftime('%Y-%m-%d') if item.purchase_date else 'N/A' }}</td>
+          <td class="px-4 py-2">{{ item.expected_arrival_date.strftime('%Y-%m-%d') if item.expected_arrival_date else 'N/A' }}</td>
+          <td class="px-4 py-2">
+            <span class="px-2 py-1 rounded-full text-xs font-medium
+              {% if item.status == 'Ordered' %}bg-blue-100 text-blue-800
+              {% elif item.status == 'Shipped' %}bg-yellow-100 text-yellow-800
+              {% elif item.status == 'Delivered' %}bg-green-100 text-green-800
+              {% elif item.status == 'Delayed' %}bg-red-100 text-red-800
+              {% else %}bg-gray-100 text-gray-800{% endif %}">
+              {{ item.status }}
+            </span>
+          </td>
+          <td class="px-4 py-2 space-x-2">
+            <a href="{{ url_for('edit_procurement_item', item_id=item.id) }}" class="text-blue-600 hover:underline">Edit</a>
+            <form action="{{ url_for('delete_procurement_item', item_id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete {{ item.name }}?')">
+              {{ delete_form.hidden_tag() }}
+              <button type="submit" class="text-red-600 hover:underline bg-transparent border-none p-0">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="text-gray-500">
+    No procurement items found.
+    <a href="{{ url_for('add_procurement_item') }}" class="text-blue-600">Add your first item</a>.
+  </p>
+{% endif %}
+{% endblock %}

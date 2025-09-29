@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Edit Local Market Item{% endblock %}
+
+{% block content %}
+<div class="container-wrapper">
+  <div class="main-content max-w-xl mx-auto">
+
+    <h1 class="text-2xl font-bold mb-6">Edit Local Market Item</h1>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mb-4">
+          {% for category, message in messages %}
+            <div class="p-3 rounded text-white
+              {% if category == 'error' %}bg-red-500
+              {% elif category == 'success' %}bg-green-500
+              {% else %}bg-blue-500{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Edit Form -->
+    <form method="POST" action="{{ url_for('edit_local_market_item', item_id=item.id) }}">
+      {{ form.hidden_tag() }}
+
+      <div class="mb-4">
+        <label for="name" class="block font-medium mb-1">Item Name</label>
+        {{ form.name(class="w-full px-3 py-2 border rounded") }}
+        {% if form.name.errors %}
+          <p class="text-red-500 text-sm mt-1">{{ form.name.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <div class="mb-4">
+        <label for="recent_price" class="block font-medium mb-1">Recent Price</label>
+        {{ form.recent_price(class="w-full px-3 py-2 border rounded") }}
+        {% if form.recent_price.errors %}
+          <p class="text-red-500 text-sm mt-1">{{ form.recent_price.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <div class="mb-4">
+        <label for="currency" class="block font-medium mb-1">Currency</label>
+        {{ form.currency(class="w-full px-3 py-2 border rounded") }}
+        {% if form.currency.errors %}
+          <p class="text-red-500 text-sm mt-1">{{ form.currency.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <div class="mb-4">
+        <label for="source" class="block font-medium mb-1">Source</label>
+        {{ form.source(class="w-full px-3 py-2 border rounded") }}
+        {% if form.source.errors %}
+          <p class="text-red-500 text-sm mt-1">{{ form.source.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center justify-between">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Update Item</button>
+        <a href="{{ url_for('list_local_market') }}" class="text-gray-600 hover:underline">Cancel</a>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

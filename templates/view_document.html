@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ invoice.document_type | title }} {{ invoice.invoice_number }}</title>
+  <style>
+    /* Inline CSS for consistent PDF preview */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 30px;
+      padding: 0;
+      color: #333;
+      background: #fff;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #2c3e50;
+      padding-bottom: 10px;
+    }
+    .company-info {
+      font-weight: 600;
+      color: #2c3e50;
+      line-height: 1.5;
+    }
+    .client-info {
+      text-align: right;
+      line-height: 1.5;
+    }
+    .doc-type {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #e74c3c;
+      margin: 15px 0;
+      text-transform: uppercase;
+    }
+    .doc-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .table-container {
+      margin: 20px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+      font-weight: 600;
+    }
+    .delivery-note .price-col,
+    .delivery-note .total-col {
+      display: none;
+    }
+    .amounts {
+      text-align: right;
+      margin-top: 30px;
+    }
+    .amounts p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    .signature-section {
+      margin-top: 50px;
+      page-break-inside: avoid;
+    }
+    .delivery-signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 40px;
+    }
+    .sign-block {
+      width: 45%;
+    }
+    .sign-label {
+      margin-bottom: 60px;
+      font-weight: 600;
+    }
+    .signature-block {
+      position: relative;
+      width: 200px;
+      height: 80px;
+    }
+    .signature-block img.signature {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: auto;
+      z-index: 1;
+    }
+    .signature-block img.stamp {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 90px;
+      z-index: 2;
+      opacity: 0.9;
+    }
+    .footer {
+      margin-top: 60px;
+      text-align: center;
+      font-size: 12px;
+      color: #7f8c8d;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+    .attachment-section {
+      margin-top: 40px;
+      border-top: 1px solid #eee;
+      padding-top: 20px;
+    }
+    .status-update {
+      margin-top: 30px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 8px 16px;
+      margin: 5px;
+      font-size: 14px;
+      text-decoration: none;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .btn-primary { background: #007BFF; color: white; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-warning { background: #ffc107; color: black; }
+    .btn-success { background: #28a745; color: white; }
+    .form-control {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="{{ 'delivery-note' if invoice.document_type == 'delivery_note' else '' }}">
+  <div class="container">
+
+    <!-- Header: Company Left, Client Right -->
+    <div class="header">
+      <div class="company-info">
+        <strong>APEX BNN Services</strong><br>
+        Kapenda 89, Makutano<br>
+        Lubumbashi Commune, Haut-Katanga<br>
+        {% if company_settings and company_settings.phone %}{{ company_settings.phone }}<br>{% endif %}
+        {% if company_settings and company_settings.email %}{{ company_settings.email }}<br>{% endif %}
+      </div>
+      <div class="client-info">
+        <strong>{{ invoice.client.name }}</strong><br>
+        {{ invoice.client.address | replace('\n', '<br>') | safe }}<br>
+        {% if invoice.client.email %}{{ invoice.client.email }}<br>{% endif %}
+      </div>
+    </div>
+
+    <!-- Document Type Banner -->
+    <div class="doc-type">
+      {{ invoice.document_type | replace('_', ' ') | title }}
+    </div>
+
+    <!-- Document Meta -->
+    <div class="doc-meta">
+      <div><strong>Document No:</strong> {{ invoice.invoice_number }}</div>
+      <div><strong>PO Number:</strong> {{ invoice.po_number or '-' }}</div>
+      <div><strong>Date:</strong> {{ invoice.issue_date.strftime('%Y-%m-%d') if invoice.issue_date else 'N/A' }}</div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Qty</th>
+            <th class="price-col">Unit Price</th>
+            <th class="total-col">Total</th>
+            <th class="no-price">Comment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in invoice.items %}
+            <tr>
+              <td>{{ item.description }}</td>
+              <td>{{ item.quantity }}</td>
+              <td class="price-col">
+                {% if item.unit_price is not none %}
+                  ${{ '%.2f'|format(item.unit_price) }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="total-col">
+                {% if item.total_price is not none %}
+                  ${{ '%.2f'|format(item.total_price) }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="no-price">{{ item.comment or '—' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Amounts (Hidden for Delivery Note) -->
+    {% if invoice.document_type != 'delivery_note' %}
+    <div class="amounts">
+      <p><strong>Subtotal:</strong>  ${{ '%.2f'|format((invoice.total_amount or 0) - (invoice.vat_amount or 0)) }}</p>
+      <p><strong>VAT ({{ invoice.vat_rate or 0 }}%):</strong> ${{ '%.2f'|format(invoice.vat_amount or 0) }}</p>
+      <p><strong>TOTAL:</strong> ${{ '%.2f'|format(invoice.total_amount or 0) }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Signatures -->
+    {% if invoice.document_type == 'delivery_note' %}
+      <div class="delivery-signatures">
+        <div class="sign-block">
+          <div class="sign-label">Delivered By:</div>
+          <div class="signature-block">
+            {% if company_settings and company_settings.signature_image_path %}
+              <img src="{{ url_for('static', filename='uploads/' + company_settings.signature_image_path) }}"
+                   alt="Signature"
+                   class="signature">
+            {% endif %}
+            {% if company_settings and company_settings.stamp_image_path %}
+              <img src="{{ url_for('static', filename='uploads/' + company_settings.stamp_image_path) }}"
+                   alt="Company Stamp"
+                   class="stamp">
+            {% endif %}
+          </div>
+          <p>{{ company_settings.signing_person_name or 'Authorized Signatory' }}</p>
+          <p>{{ company_settings.signing_person_function or 'Logistics Manager' }}</p>
+        </div>
+        <div class="sign-block">
+          <div class="sign-label">Received By:</div>
+          <div style="height: 80px; border-bottom: 1px solid #000; margin-bottom: 40px;"></div>
+          <p>Name: ___________________</p>
+          <p>Date: ____________________</p>
+        </div>
+      </div>
+    {% else %}
+      <div class="signature-section">
+        <p><strong>{{ company_settings.signing_person_name or 'Authorized Signatory' }}</strong></p>
+        <p>{{ company_settings.signing_person_function or 'Finance Manager' }}</p>
+        <div class="signature-block">
+          {% if company_settings and company_settings.signature_image_path %}
+            <img src="{{ url_for('static', filename='uploads/' + company_settings.signature_image_path) }}"
+                 alt="Signature"
+                 class="signature">
+          {% endif %}
+          {% if company_settings and company_settings.stamp_image_path %}
+            <img src="{{ url_for('static', filename='uploads/' + company_settings.stamp_image_path) }}"
+                 alt="Company Stamp"
+                 class="stamp">
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Status Update Section -->
+    <div class="status-update mt-8 p-6 bg-white rounded-lg shadow">
+      <h2 class="text-xl font-semibold mb-4">Update Status</h2>
+      <form method="POST" action="{{ url_for('update_document_status', invoice_id=invoice.id) }}" class="space-y-4">
+        <div>
+          <label class="block font-medium">New Status</label>
+          <select name="status" required class="form-control">
+            <option value="">-- Select Status --</option>
+            {% set statuses = ['Pending', 'Paid', 'Overdue', 'Accepted', 'Rejected', 'Delivered'] %}
+            {% for s in statuses %}
+              <option value="{{ s }}" {% if invoice.status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Status</button>
+      </form>
+    </div>
+
+    <!-- Attachments Section -->
+    <div class="attachment-section mt-8 p-6 bg-white rounded-lg shadow">
+      <h2 class="text-xl font-semibold mb-4">Attachments</h2>
+
+      <!-- Upload Form -->
+      <form method="POST" action="{{ url_for('upload_attachment', invoice_id=invoice.id) }}" enctype="multipart/form-data" class="space-y-4">
+        <div>
+          <label class="block font-medium">Upload File</label>
+          <input type="file" name="file" required class="form-control">
+        </div>
+        <div>
+          <label class="block font-medium">Description (Optional)</label>
+          <input type="text" name="description" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-success">Upload</button>
+      </form>
+
+      <!-- List Attachments -->
+      {% if invoice.attachments %}
+      <div class="mt-6">
+        <h3 class="text-lg font-medium mb-2">Uploaded Files</h3>
+        <ul class="space-y-2">
+          {% for att in invoice.attachments %}
+          <li class="flex justify-between items-center py-2 border-b">
+            <div>
+              <strong>{{ att.filename }}</strong><br>
+              <small>{{ att.description or 'No description' }}</small>
+            </div>
+            <a href="{{ url_for('download_attachment', attachment_id=att.id) }}" class="text-blue-600 hover:underline">Download</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="margin-top: 40px; text-align: center;">
+      <a href="{{ url_for('edit_document', invoice_id=invoice.id) }}" 
+         class="btn btn-warning">
+         ✏️ Edit Document
+      </a>
+      <a href="{{ url_for('download_document', invoice_id=invoice.id) }}" 
+         class="btn btn-primary">
+         📥 Download PDF
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      APEX BNN Services - Professional Services & Procurement
+    </div>
+
+  </div>
+</body>
+</html>

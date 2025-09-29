@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Search Results{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Search Results</h1>
+
+{% if invoices %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full bg-white rounded-lg shadow">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="px-4 py-2">Document Type</th>
+          <th class="px-4 py-2">Client</th>
+          <th class="px-4 py-2">Date Created</th>
+          <th class="px-4 py-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invoice in invoices %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="px-4 py-2">{{ invoice.document_type.title() }}</td>
+          <td class="px-4 py-2">{{ invoice.client.name }}</td>
+          <td class="px-4 py-2">{{ invoice.date_created.strftime('%Y-%m-%d') }}</td>
+          <td class="px-4 py-2">
+            <a href="{{ url_for('view_document', invoice_id=invoice.id) }}">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="text-gray-500">No results found.</p>
+{% endif %}
+
+{% endblock %}

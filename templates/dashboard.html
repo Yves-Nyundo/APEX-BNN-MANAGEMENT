@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - APEX BNN Services{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+  <!-- Heading -->
+  <header>
+    <h1 class="text-3xl font-bold">Dashboard</h1>
+  </header>
+
+  <!-- Stats Section -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+    <div class="bg-yellow-400 text-white p-5 rounded-lg shadow text-center">
+      <h3 class="text-lg">Pending Invoices</h3>
+      <p class="text-2xl font-bold">{{ pending_invoices }}</p>
+    </div>
+    <div class="bg-green-600 text-white p-5 rounded-lg shadow text-center">
+      <h3 class="text-lg">Total Revenue</h3>
+      <p class="text-2xl font-bold">${{ "%.2f"|format(total_revenue) }}</p>
+    </div>
+    <div class="bg-red-600 text-white p-5 rounded-lg shadow text-center">
+      <h3 class="text-lg">Overdue Invoices</h3>
+      <p class="text-2xl font-bold">{{ overdue_invoices }}</p>
+    </div>
+    <div class="bg-teal-500 text-white p-5 rounded-lg shadow text-center">
+      <h3 class="text-lg">Pending Proformas</h3>
+      <p class="text-2xl font-bold">{{ pending_proformas }}</p>
+    </div>
+    <div class="bg-purple-600 text-white p-5 rounded-lg shadow text-center">
+      <h3 class="text-lg">Pending Delivery Notes</h3>
+      <p class="text-2xl font-bold">{{ pending_delivery_notes }}</p>
+    </div>
+  </div>
+  <!-- Low & Out of Stock Items -->
+<div class="bg-white p-6 rounded-lg shadow mt-8">
+  <h3 class="text-xl font-medium mb-4">Inventory Alerts</h3>
+
+  <!-- Out of Stock -->
+  {% if out_of_stock_items %}
+    <div class="mb-6">
+      <h4 class="text-lg font-semibold text-red-700"> Out of Stock ({{ out_of_stock_items|length }})</h4>
+      <ul class="list-disc pl-5 text-red-600">
+        {% for item in out_of_stock_items %}
+          <li>{{ item.name }} (Qty: {{ item.quantity_on_hand }})</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <!-- Low Stock -->
+  {% if low_stock_items %}
+    <div>
+      <h4 class="text-lg font-semibold text-yellow-700"> Low Stock ({{ low_stock_items|length }})</h4>
+      <ul class="list-disc pl-5 text-yellow-600">
+        {% for item in low_stock_items %}
+          <li>{{ item.name }} ({{ item.quantity_on_hand }} / {{ item.reorder_point }})</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <!-- All Good -->
+  {% if not out_of_stock_items and not low_stock_items %}
+    <p class="text-green-600 font-medium"> All inventory items are well-stocked!</p>
+  {% endif %}
+</div>
+  <!-- Low Stock Items on Dashboard -->
+<div class="bg-white p-6 rounded-lg shadow mt-8">
+  <h3 class="text-xl font-medium mb-4">Low & Out of Stock Items</h3>
+  <ul class="space-y-1">
+    {% for item in items if item.quantity_on_hand <= item.reorder_point %}
+      <li class="flex justify-between {% if item.quantity_on_hand == 0 %}text-red-600 font-bold{% else %}text-yellow-600{% endif %}">
+        <span>{{ item.name }}</span>
+        <span>{{ item.quantity_on_hand }} / {{ item.reorder_point or 'N/A' }}</span>
+      </li>
+    {% endfor %}
+    {% if not items or (items|selectattr('quantity_on_hand', 'le', 'reorder_point')|list)|length == 0 %}
+      <li class="text-green-600">All items are well-stocked!</li>
+    {% endif %}
+  </ul>
+</div>
+  <!-- Low Stock Alert Card -->
+<!-- <div class="bg-yellow-500 text-white p-5 rounded-lg shadow text-center">
+  <h3 class="text-lg">Low Stock Items</h3>
+  <p class="text-2xl font-bold">{{ low_stock_items }}</p>
+</div>
+<div class="bg-red-600 text-white p-5 rounded-lg shadow text-center">
+  <h3 class="text-lg">Out of Stock</h3>
+  <p class="text-2xl font-bold">{{ out_of_stock_items }}</p>
+</div> -->
+
+  <!-- Additional Metrics -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+    <div class="bg-gray-600 text-white p-5 rounded-lg shadow text-center">
+      <h3 class="text-lg">Recent Activities (7d)</h3>
+      <p class="text-2xl font-bold">{{ recent_activity_count }}</p>
+    </div>
+    <div class="bg-emerald-500 text-white p-5 rounded-lg shadow text-center">
+      <h3 class="text-lg">Top Client</h3>
+      <p class="text-sm">{{ top_client_name }}</p>
+      <p class="text-xl font-bold">${{ "%.2f"|format(top_client_amount) }}</p>
+    </div>
+    <div class="bg-orange-500 text-white p-5 rounded-lg shadow text-center">
+      <h3 class="text-lg">Avg. Invoice</h3>
+      <p class="text-2xl font-bold">${{ "%.2f"|format(avg_invoice_value) }}</p>
+    </div>
+    <div class="bg-pink-600 text-white p-5 rounded-lg shadow text-center">
+      <h3 class="text-lg">Total Suppliers</h3>
+      <p class="text-2xl font-bold">{{ total_suppliers }}</p>
+    </div>
+    <div class="bg-indigo-700 text-white p-5 rounded-lg shadow text-center">
+      <h3 class="text-lg">Pending Procurements</h3>
+      <p class="text-2xl font-bold">{{ pending_procurements }}</p>
+    </div>
+  </div>
+
+  <!-- Graphs Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="bg-white p-6 rounded-lg shadow">
+      <h3 class="text-xl font-medium mb-4">Monthly Revenue (Last 12 Months)</h3>
+      <canvas id="revenueChart"></canvas>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+      <h3 class="text-xl font-medium mb-4">Document Type Distribution</h3>
+      <canvas id="documentTypeChart"></canvas>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="bg-white p-6 rounded-lg shadow">
+      <h3 class="text-xl font-medium mb-4">Top 5 Clients by Revenue</h3>
+      <canvas id="topClientsChart"></canvas>
+    </div>
+    <form method="GET" class="mb-6 flex space-x-4">
+  <select name="status" class="border rounded p-2">
+    <option value="">All Statuses</option>
+    <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+    <option value="Won" {% if status_filter == 'Won' %}selected{% endif %}>Won</option>
+    <option value="Lost" {% if status_filter == 'Lost' %}selected{% endif %}>Lost</option>
+  </select>
+  <select name="currency" class="border rounded p-2">
+    <option value="">All Currencies</option>
+    <option value="USD" {% if currency_filter == 'USD' %}selected{% endif %}>USD</option>
+    <option value="EUR" {% if currency_filter == 'EUR' %}selected{% endif %}>EUR</option>
+    <option value="CDF" {% if currency_filter == 'CDF' %}selected{% endif %}>CDF</option>
+    <option value="ZAR" {% if currency_filter == 'ZAR' %}selected{% endif %}>ZAR</option>
+  </select>
+  <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Filter</button>
+  <a href="{{ url_for('export_bids') }}" class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800">Export CSV</a>
+</form>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+      <h3 class="text-xl font-medium mb-4">Procurement & Bidding Overview</h3>
+      <ul class="list-disc pl-5 space-y-2">
+        <li>Total Bids Submitted: {{ total_bids }}</li>
+        <li>Pending Bids: {{ pending_bids }}</li>
+      </ul>
+    </div>
+  </div>
+<h2 class="text-xl font-semibold mt-8 mb-4">Bid Intelligence</h2>
+<table class="min-w-full bg-white rounded-lg shadow">
+  <thead class="bg-gray-200">
+    <tr>
+      <th class="px-4 py-2">Item</th>
+      <th class="px-4 py-2">Our Price</th>
+      <th class="px-4 py-2">Lowest Competitor</th>
+      <th class="px-4 py-2">Win Risk</th>
+      <th class="px-4 py-2">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for bid in bids %}
+    <tr class="border-b hover:bg-gray-50">
+      <td class="px-4 py-2">{{ bid.item_description }}</td>
+      <td class="px-4 py-2">{{ bid.currency }} {{ "%.2f"|format(bid.our_bid_price) }}</td>
+      <td class="px-4 py-2">
+        {% set lowest = get_lowest_competitor(bid) %}
+        {% if lowest %}
+          {{ bid.currency }} {{ "%.2f"|format(lowest.bid_price) }} ({{ lowest.competitor_name }})
+        {% else %}
+          N/A
+        {% endif %}
+      </td>
+      <td class="px-4 py-2">
+        {% if is_price_too_high(bid) %}
+          <span class="text-red-600 font-semibold">⚠️ High Risk</span>
+        {% else %}
+          ✅ Competitive
+        {% endif %}
+      </td>
+      <td class="px-4 py-2">{{ bid.status }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<h2 class="text-xl font-semibold mt-8 mb-4">Top Competitors</h2>
+<table class="min-w-full bg-white rounded-lg shadow">
+  <thead class="bg-gray-200">
+    <tr>
+      <th class="px-4 py-2">Name</th>
+      <th class="px-4 py-2">Bids</th>
+      <th class="px-4 py-2">Avg Price</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for comp in top_competitors %}
+    <tr class="border-b hover:bg-gray-50">
+      <td class="px-4 py-2">{{ comp.competitor_name }}</td>
+      <td class="px-4 py-2">{{ comp.bid_count }}</td>
+      <td class="px-4 py-2">${{ "%.2f"|format(comp.avg_price) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+  <!-- Company Address -->
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-xl font-medium mb-2">Company Address</h3>
+    <p><strong>APEX BNN Services</strong></p>
+    <p>Kapenda 89, Makutano</p>
+    <p>Lubumbashi Commune, Haut-Katanga</p>
+  </div>
+
+  <!-- Recent Documents Table -->
+  <section>
+    <h2 class="text-2xl font-semibold mb-4">Recent Documents</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white rounded-lg shadow">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="px-4 py-2">Document #</th>
+            <th class="px-4 py-2">Type</th>
+            <th class="px-4 py-2">Client</th>
+            <th class="px-4 py-2">Date</th>
+            {% set show_amount = recent_documents|selectattr('document_type', 'ne', 'delivery_note')|list %}
+            {% if show_amount %}
+              <th class="px-4 py-2">Amount</th>
+            {% endif %}
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc in recent_documents %}
+          <tr class="border-b hover:bg-gray-50">
+            <td class="px-4 py-2">
+              <a href="{{ url_for('view_document', invoice_id=doc.id) }}">View</a>
+                {{ doc.invoice_number }}
+              </a>
+            </td>
+            <td class="px-4 py-2">{{ doc.document_type|title }}</td>
+            <td class="px-4 py-2">{{ doc.client.name }}</td>
+            <td class="px-4 py-2">{{ doc.date_created.strftime('%Y-%m-%d') }}</td>
+            {% if doc.document_type != 'delivery_note' %}
+              <td class="px-4 py-2">${{ "%.2f"|format(doc.total_amount) }}</td>
+            {% endif %}
+            <td class="px-4 py-2">
+              <span class="px-2 py-1 rounded-full text-xs font-medium
+                {% if doc.status == 'Paid' %}bg-green-100 text-green-800
+                {% elif doc.status == 'Overdue' %}bg-red-100 text-red-800
+                {% elif doc.status == 'Pending' %}bg-yellow-100 text-yellow-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ doc.status }}
+              </span>
+            </td>
+            <td class="px-4 py-2 space-x-2">
+              <a href="{{ url_for('view_document', invoice_id=doc.id) }}" class="text-gray-700 hover:underline">View</a>
+              <a href="{{ url_for('download_document', invoice_id=doc.id) }}">PDF</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+<!-- VAT This Month -->
+<div class="bg-green-600 text-white p-5 rounded-lg shadow text-center">
+  <h3 class="text-lg">VAT Collected (This Month)</h3>
+  <p class="text-2xl font-bold">${{ "%.2f"|format(monthly_vat) }}</p>
+</div>
+
+<!-- Tax Summary Chart -->
+<div class="bg-white p-6 rounded-lg shadow col-span-1 md:col-span-3">
+  <h3 class="text-xl font-medium mb-4">Monthly Revenue & VAT (Last 12 Months)</h3>
+  <canvas id="taxChart" height="100"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('taxChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ monthly_labels | tojson }},
+      datasets: [
+        {
+          label: 'Revenue',
+          data: {{ monthly_revenue | tojson }},
+          backgroundColor: 'rgba(54, 162, 235, 0.6)'
+        },
+        {
+          label: 'VAT Collected',
+          data: {{ monthly_vat_data | tojson }},
+          backgroundColor: 'rgba(255, 99, 132, 0.6)'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+</script>
+<!-- Chart.js -->
+ <h2 class="text-xl font-semibold mt-8 mb-4">Bid Status Distribution</h2>
+<canvas id="statusChart" width="400" height="200"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx2 = document.getElementById('statusChart').getContext('2d');
+const statusChart = new Chart(ctx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Pending', 'Won', 'Lost'],
+    datasets: [{
+      label: 'Bid Status',
+      data: [
+        {{ bids|selectattr('status', 'equalto', 'Pending')|list|length }},
+        {{ bids|selectattr('status', 'equalto', 'Won')|list|length }},
+        {{ bids|selectattr('status', 'equalto', 'Lost')|list|length }}
+      ],
+      backgroundColor: ['#facc15', '#22c55e', '#ef4444']
+    }]
+  }
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  async function renderChart(endpoint, canvasId, type, opts) {
+    try {
+      const res = await fetch(`/api/${endpoint}`);
+      const data = await res.json();
+      if (data.error) {
+        console.error(`Error fetching data for ${endpoint}:`, data.error);
+        return;
+      }
+
+      new Chart(document.getElementById(canvasId).getContext('2d'), {
+        type,
+        data: {
+          labels: data.labels,
+          datasets: [{
+            label: opts.label,
+            data: data.data,
+            backgroundColor: opts.bgColor,
+            borderColor: opts.borderColor,
+            borderWidth: 1
+          }]
+        },
+        options: opts.chartOptions
+      });
+    } catch (error) {
+      console.error(`Failed to render chart ${canvasId}:`, error);
+    }
+  }
+
+  window.addEventListener('load', () => {
+    renderChart('monthly_revenue', 'revenueChart', 'line', {
+      label: 'Revenue ($)',
+      bgColor: 'rgba(75,192,192,0.2)',
+      borderColor: 'rgb(75,192,192)',
+      chartOptions: {
+        responsive: true,
+        scales: {
+          y: { 
+            beginAtZero: true, 
+            ticks: { callback: v => '$' + v.toLocaleString() }
+          }
+        }
+      }
+    });
+
+    renderChart('document_type_distribution', 'documentTypeChart', 'pie', {
+      label: '',
+      bgColor: ['rgba(255,99,132,0.2)', 'rgba(54,162,235,0.2)', 'rgba(255,205,86,0.2)'],
+      borderColor: ['rgb(255,99,132)', 'rgb(54,162,235)', 'rgb(255,205,86)'],
+      chartOptions: { responsive: true }
+    });
+
+    renderChart('top_clients', 'topClientsChart', 'bar', {
+      label: 'Revenue ($)',
+      bgColor: 'rgba(255,159,64,0.2)',
+      borderColor: 'rgb(255,159,64)',
+      chartOptions: {
+        indexAxis: 'y',
+        responsive: true,
+        scales: { x: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } }
+      }
+    });
+  });
+</script>
+{% endblock %}

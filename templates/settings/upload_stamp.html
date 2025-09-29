@@ -1,0 +1,89 @@
+<!-- settings/upload_stamp.html -->
+<h2 class="text-2xl font-bold mb-6">Upload Signature & Stamp</h2>
+
+<form method="POST" enctype="multipart/form-data">
+  <!-- ✅ Critical: Add CSRF token -->
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+  <div class="space-y-4">
+    <div>
+      <label class="block">Signing Person Name</label>
+      <input type="text"
+             name="signing_person_name"
+             value="{{ settings.signing_person_name or '' }}"
+             class="w-full border rounded p-2"
+             required>
+    </div>
+
+    <div>
+      <label class="block">Function / Title</label>
+      <input type="text"
+             name="signing_person_function"
+             value="{{ settings.signing_person_function or '' }}"
+             class="w-full border rounded p-2"
+             required>
+    </div>
+
+    <div>
+      <label class="block">Signature Image</label>
+      <input type="file" name="signature_file" accept="image/*" class="w-full">
+    </div>
+
+    <div>
+      <label class="block">Company Stamp / Seal</label>
+      <input type="file" name="stamp_file" accept="image/*" class="w-full">
+    </div>
+
+    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+      Save
+    </button>
+  </div>
+</form>
+
+<!-- Preview Section -->
+<!-- {% if settings.signature_image_path or settings.stamp_image_path %}
+<div class="mt-8 border-t pt-6">
+  <h3 class="text-xl font-semibold mb-4">Preview Signature Block</h3>
+  <div class="inline-block relative w-64 h-40">
+    {% if settings.signature_image_path %}
+    <img src="{{ url_for('static', filename='uploads/' + settings.signature_image_path) }}"
+         alt="Signature"
+         class="absolute top-0 left-0 w-full h-auto z-10">
+    {% endif %}
+    {% if settings.stamp_image_path %}
+    <img src="{{ url_for('static', filename='uploads/' + settings.stamp_image_path) }}"
+         alt="Stamp"
+         class="absolute top-[-10px] right-[-10px] w-[90px] h-auto opacity-90 z-20">
+    {% endif %}
+  </div>
+  <p class="mt-2"><strong>{{ settings.signing_person_name or 'Authorized Signatory' }}</strong></p>
+  <p>{{ settings.signing_person_function or 'Finance Manager' }}</p>
+</div>
+{% endif %} -->
+
+<!-- Preview Section -->
+{% if settings.signature_image_path or settings.stamp_image_path %}
+<div class="mt-8 border-t pt-6">
+  <h3 class="text-xl font-semibold mb-4">Preview Signature Block</h3>
+  <div class="inline-block relative w-64 h-40">
+
+    {# Only render if path exists and starts safely #}
+    {% if settings.signature_image_path and not settings.signature_image_path.startswith('..') %}
+    <img src="{{ url_for('static', filename='uploads/' + settings.signature_image_path) }}"
+         alt="Signature"
+         class="absolute top-0 left-0 w-full h-auto z-10"
+         onerror="this.style.display='none'; console.warn('Missing signature image:', '{{ url_for('static', filename='uploads/' + settings.signature_image_path) }}')">
+    {% endif %}
+
+    {% if settings.stamp_image_path and not settings.stamp_image_path.startswith('..') %}
+    <img src="{{ url_for('static', filename='uploads/' + settings.stamp_image_path) }}"
+         alt="Stamp"
+         class="absolute top-[-10px] right-[-10px] w-[90px] h-auto opacity-90 z-20"
+         onerror="this.style.display='none'; console.warn('Missing stamp image:', '{{ url_for('static', filename='uploads/' + settings.stamp_image_path) }}')">
+    {% endif %}
+
+  </div>
+  <p class="mt-2"><strong>{{ settings.signing_person_name or 'Authorized Signatory' }}</strong></p>
+  <p>{{ settings.signing_person_function or 'Finance Manager' }}</p>
+</div>
+{% endif %}

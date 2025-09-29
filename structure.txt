@@ -1,0 +1,73 @@
+apex_bnn_app/
+│
+├── app.py                     ← (The complete version I provided)
+├── config.py
+├── requirements.txt
+├── Dockerfile
+├── docker-compose.yml
+├── .gitignore
+├── README.md
+├── run.py
+│
+├── tests/
+│   └── test_app.py
+│
+├── instance/
+│   └── (DB will go here, gitignored)
+│
+├── uploads/                   ← Will be created automatically
+│
+├── static/
+│   └── css/
+│       └── style.css
+│
+├── templates/
+│   ├── base.html
+│   ├── auth/
+│   │   └── login.html
+│   ├── dashboard.html
+│   ├── generate_document.html
+│   ├── document_template.html
+│   ├── view_invoice.html
+│   │
+│   ├── documents/
+│   │   └── list.html
+│   │
+│   ├── clients/
+│   │   ├── list.html
+│   │   └── add.html
+│   │
+│   ├── suppliers/
+│   │   ├── list.html
+│   │   └── add.html
+│   │
+│   ├── bids/
+│   │   ├── list.html
+│   │   └── add.html
+│   │
+│   ├── inventory/
+│   │   ├── list.html
+│   │   └── add.html
+│   │
+│   ├── local_market/
+│   │   ├── list.html
+│   │   └── add.html
+│   │
+│   ├── competitors/
+│   │   ├── list.html
+│   │   └── add.html
+│   │
+│   ├── analysis/
+│   │   ├── profitability.html
+│   │   ├── procurement.html
+│   │   ├── prediction.html
+│   │   └── business_outlook.html
+│   │
+│   └── settings/
+│       ├── upload_stamp.html
+│       └── upload_signature.html
+│
+└── utils/
+    ├── s3_storage.py
+    ├── email.py
+    └── pdf_generator.py

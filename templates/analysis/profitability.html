@@ -1,0 +1,48 @@
+<!-- templates/analysis/profitability.html -->
+{% extends "base.html" %}
+{% block title %}Profitability Analysis{% endblock %}
+
+{% block content %}
+<div class="container-wrapper">
+  <div class="main-content">
+
+    <h1 class="text-2xl font-bold mb-6">Profitability Analysis</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-blue-100 p-6 rounded-lg shadow">
+        <h2 class="text-lg font-semibold">Total Revenue</h2>
+        <p class="text-2xl font-bold">${{ "%.2f"|format(total_revenue) }}</p>
+      </div>
+      <div class="bg-green-100 p-6 rounded-lg shadow">
+        <h2 class="text-lg font-semibold">Total COGS</h2>
+        <p class="text-2xl font-bold">${{ "%.2f"|format(total_cogs) }}</p>
+      </div>
+      <div class="bg-purple-100 p-6 rounded-lg shadow">
+        <h2 class="text-lg font-semibold">Gross Profit</h2>
+        <p class="text-2xl font-bold">${{ "%.2f"|format(gross_profit) }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow mb-8">
+      <h2 class="text-xl font-semibold mb-4">Profit Summary</h2>
+      <p>
+        Your business has generated <strong>${{ "%.2f"|format(total_revenue) }}</strong> in revenue,
+        with a cost of goods sold (COGS) of <strong>${{ "%.2f"|format(total_cogs) }}</strong>.
+        This results in a gross profit of <strong>${{ "%.2f"|format(gross_profit) }}</strong>,
+        or <strong>{{ "%.1f"|format((gross_profit / total_revenue * 100) if total_revenue > 0 else 0) }}%</strong> margin.
+      </p>
+    </div>
+
+    <div class="bg-gray-50 p-6 rounded-lg shadow">
+      <h2 class="text-xl font-semibold mb-4">Next Steps</h2>
+      <ul class="list-disc pl-5 space-y-2">
+        <li>Reduce COGS by negotiating with suppliers</li>
+        <li>Increase pricing on high-demand items</li>
+        <li>Review low-margin products and consider discontinuing</li>
+        <li>Track profitability per client or project</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

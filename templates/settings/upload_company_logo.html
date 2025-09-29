@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Upload Company Logo{% endblock %}
+
+{% block content %}
+<div class="container-wrapper">
+  <div class="main-content">
+
+    <h1 class="text-2xl font-bold mb-6">Upload Company Logo</h1>
+    <p class="text-gray-600 mb-8">Upload your company logo for use on documents.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="p-3 mb-4 rounded text-white
+            {% if category == 'error' %}bg-red-500
+            {% elif category == 'success' %}bg-green-500
+            {% else %}bg-blue-500{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" enctype="multipart/form-data" class="bg-white p-6 rounded-lg shadow space-y-6">
+      <!-- ✅ Critical: Add CSRF token -->
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+      <!-- Logo Upload -->
+      <div>
+        <h2 class="text-xl font-semibold mb-4">Company Logo</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block font-medium mb-1">Upload Logo (PNG/JPG)</label>
+            <input type="file" name="logo_file" accept=".png,.jpg,.jpeg" class="w-full border rounded p-2">
+            <p class="text-sm text-gray-500 mt-1">Recommended: Transparent PNG, 200x80px</p>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Preview</label>
+            {% if settings.logo_image_path %}
+              <img src="{{ url_for('company_logo') }}" alt="Current Logo" class="border rounded max-h-20" style="max-height: 80px;">
+            {% else %}
+              <p class="text-gray-400">No logo uploaded</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="pt-4">
+        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+          Upload & Save
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

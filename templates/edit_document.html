@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-screen-xl mx-auto px-6 py-8">
+  <h2 class="text-center text-white text-2xl font-semibold mb-8">
+    Edit {{ invoice.document_type | replace('_', ' ') | title }}
+  </h2>
+
+  <form method="POST" id="document-form" class="space-y-10">
+    {{ form.hidden_tag() }}
+
+    <!-- Client Information -->
+    <section>
+      <h3 class="text-white text-lg font-medium mb-4">Client Information</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% for field_id, label in [('client', 'Client'), ('client-email', 'Email'), ('client-phone', 'Phone'), ('client-address', 'Address')] %}
+        <div class="relative">
+          {% if field_id == 'client' %}
+            {{ form.client(class="peer form-select w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", id=field_id) }}
+            <label for="{{ field_id }}" class="floating-label">{{ label }}</label>
+          {% else %}
+            <input 
+              type="text"
+              id="{{ field_id }}"
+              class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded placeholder-transparent"
+              readonly
+              {% if field_id == 'client-email' and invoice.client.email %}
+                data-client-email="{{ invoice.client.email }}"
+                value="{{ invoice.client.email }}"
+              {% elif field_id == 'client-phone' and invoice.client.phone %}
+                data-client-phone="{{ invoice.client.phone }}"
+                value="{{ invoice.client.phone }}"
+              {% elif field_id == 'client-address' and invoice.client.address %}
+                data-client-address="{{ invoice.client.address | replace('\n', '\\n') }}"
+                value="{{ invoice.client.address }}"
+              {% endif %}
+            >
+            <label for="{{ field_id }}" class="floating-label">{{ label }}</label>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Document Details -->
+    <section>
+      <h3 class="text-white text-lg font-medium mb-4">{{ _('Document Details') }}</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- PO Number -->
+        <div class="relative">
+          {{ form.po_number(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+          <label class="floating-label">{{ _('PO Number') }}</label>
+        </div>
+
+        <!-- Issue Date -->
+        <div class="relative">
+          {{ form.issue_date(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+          <label class="floating-label">{{ _('Issue Date') }}</label>
+        </div>
+
+        <!-- Due Date -->
+        <div class="relative" id="due-date-field" style="display: {% if invoice.document_type != 'delivery_note' %}block{% else %}none{% endif %};">
+          {{ form.due_date(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+          <label class="floating-label">{{ _('Due Date') }}</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Signing Information -->
+    <section>
+      <h3 class="text-white text-lg font-medium mb-4">{{ _('Signing Information') }}</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Signing Person Name -->
+        <div class="relative">
+          <input
+            type="text"
+            name="signing_person_name"
+            id="signing_person_name"
+            class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded"
+            value="{{ form.signing_person_name.data }}"
+            required>
+          <label for="signing_person_name" class="floating-label">{{ _('Signing Person Name') }}</label>
+        </div>
+
+        <!-- Signing Person Function -->
+        <div class="relative">
+          <input
+            type="text"
+            name="signing_person_function"
+            id="signing_person_function"
+            class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded"
+            value="{{ form.signing_person_function.data }}"
+            required>
+          <label for="signing_person_function" class="floating-label">{{ _('Function') }}</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- VAT Rate -->
+    {% if invoice.document_type != 'delivery_note' %}
+    <section>
+      <div class="relative">
+        {{ form.vat_rate.label(class="floating-label") }}
+        {{ form.vat_rate(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- Items -->
+    <section>
+      <h3 class="text-white text-lg font-medium mb-4">Items</h3>
+      <div id="items-container" class="space-y-4">
+        <!-- {% for item in form.items %} -->
+        <!-- <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-{% if invoice.document_type != 'delivery_note' %}5{% else %}3{% endif %} gap-4 item-row"> -->
+          <!-- Description -->
+          <!-- <div class="relative">
+            {{ item.form.description(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+            <label class="floating-label">Description</label>
+          </div> -->
+
+          <!-- Quantity -->
+          <!-- <div class="relative">
+            {{ item.form.quantity(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+            <label class="floating-label">Quantity</label>
+          </div> -->
+
+          <!-- Unit Price -->
+          <!-- {% if invoice.document_type != 'delivery_note' %}
+          <div class="relative">
+            {{ item.form.unit_price(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+            <label class="floating-label">Unit Price</label>
+          </div>
+          {% endif %} -->
+
+          <!-- Comment -->
+          <!-- <div class="relative">
+            {{ item.form.comment(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+            <label class="floating-label">Comment</label>
+          </div> -->
+
+          <!-- Remove Button -->
+          <!-- <div class="flex items-center justify-end">
+            <button type="button" class="bg-red-600 text-white px-3 py-2 rounded remove-item-btn">×</button>
+          </div>
+        </div>
+        {% endfor %} -->
+      </div>
+      <button type="button" id="add-item-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-4">
+        Add Item
+      </button>
+    </section>
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-4 mt-8">
+      <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">Save Changes</button>
+      <a href="{{ url_for('view_document', invoice_id=invoice.id) }}" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+// Helper to activate floating labels
+function updateFloatingLabels() {
+  document.querySelectorAll('.peer').forEach(input => {
+    const hasValue = input.value && input.value.trim() !== '';
+    if (hasValue) {
+      input.classList.add('has-value');
+    } else {
+      input.classList.remove('has-value');
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  // Pre-fill client fields using embedded data
+  const emailField = document.getElementById('client-email');
+  const phoneField = document.getElementById('client-phone');
+  const addressField = document.getElementById('client-address');
+
+  if (emailField?.dataset.clientEmail) {
+    emailField.value = emailField.dataset.clientEmail;
+  }
+  if (phoneField?.dataset.clientPhone) {
+    phoneField.value = phoneField.dataset.clientPhone;
+  }
+  if (addressField?.dataset.clientAddress) {
+    addressField.value = addressField.dataset.clientAddress.replace(/\\n/g, '\n');
+  }
+
+  // Activate floating labels after setting values
+  updateFloatingLabels();
+
+  // Handle dynamic item addition
+  const container = document.getElementById('items-container');
+  const addButton = document.getElementById('add-item-btn');
+  const docType = "{{ invoice.document_type }}";
+
+  // Safely detect next index
+  function getNextIndex() {
+    const indices = Array.from(container.querySelectorAll('[name^="items-"]'))
+      .map(el => {
+        const match = el.name.match(/items-(\d+)-form-/);
+        return match ? parseInt(match[1]) : -1;
+      })
+      .filter(n => !isNaN(n));
+    return indices.length ? Math.max(...indices) + 1 : {{ form.items|length }};
+  }
+
+  let itemIndex = getNextIndex();
+
+  // === NEW: addItemRow function ===
+  function addItemRow(index, desc = '', qty = '', price = '', comment = '') {
+    const newRow = document.createElement('div');
+    newRow.className = `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${docType !== 'delivery_note' ? '5' : '3'} gap-4 item-row`;
+
+    let html = `
+      <div class="relative">
+        <input type="text" name="items-${index}-form-description" 
+               value="${desc.replace(/"/g, '&quot;')}" 
+               class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded" placeholder=" ">
+        <label class="floating-label">Description</label>
+      </div>
+      <div class="relative">
+        <input type="number" step="any" name="items-${index}-form-quantity"
+               value="${qty}" 
+               class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded" placeholder=" ">
+        <label class="floating-label">Quantity</label>
+      </div>`;
+
+    if (docType !== 'delivery_note') {
+      html += `
+        <div class="relative">
+          <input type="number" step="any" name="items-${index}-form-unit_price"
+                 value="${price}" 
+                 class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded" placeholder=" ">
+          <label class="floating-label">Unit Price</label>
+        </div>`;
+    }
+
+    html += `
+      <div class="relative">
+        <input type="text" name="items-${index}-form-comment"
+               value="${comment.replace(/"/g, '&quot;')}" 
+               class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded" placeholder=" ">
+        <label class="floating-label">Comment</label>
+      </div>
+      <div class="flex items-center justify-end">
+        <button type="button" class="bg-red-600 text-white px-3 py-2 rounded remove-item-btn">×</button>
+      </div>`;
+
+    newRow.innerHTML = html;
+    container.appendChild(newRow);
+  }
+
+  // === Populate existing items from server ===
+  {% for item in form.items %}
+    addItemRow(
+      {{ loop.index0 }},
+      "{{ item.form.description.data | replace('"', '\\"') | e }}",
+      "{{ item.form.quantity.data }}",
+      "{{ item.form.unit_price.data }}",
+      "{{ item.form.comment.data | replace('"', '\\"') | e }}"
+    );
+  {% endfor %}
+
+  // === Add new item button handler ===
+  addButton?.addEventListener('click', function () {
+    addItemRow(itemIndex++);
+  });
+
+  // === Remove item on click ===
+  document.addEventListener('click', e => {
+    if (e.target.classList.contains('remove-item-btn')) {
+      e.target.closest('.item-row').remove();
+    }
+  });
+});
+</script>
+{% endblock %}

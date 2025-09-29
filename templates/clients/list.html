@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Clients{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Clients</h1>
+
+<a href="{{ url_for('add_client') }}" class="bg-blue-600 text-white px-4 py-2 rounded mb-4 inline-block">+ Add Client</a>
+
+{% if clients %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full bg-white rounded-lg shadow">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="px-4 py-2 text-left">Name</th>
+          <th class="px-4 py-2 text-left">Email</th>
+          <th class="px-4 py-2 text-left">Phone</th>
+          <th class="px-4 py-2 text-left">Address</th>
+          <th class="px-4 py-2 text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for client in clients %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="px-4 py-2">{{ client.name }}</td>
+          <td class="px-4 py-2">{{ client.email or '-' }}</td>
+          <td class="px-4 py-2">{{ client.phone or '-' }}</td>
+          <td class="px-4 py-2">{{ client.address or '-' }}</td>
+          <td class="px-4 py-2 space-x-2">
+            <a href="{{ url_for('edit_client', client_id=client.id) }}" class="text-blue-600 hover:underline">Edit</a>
+
+            
+            <form method="POST" action="{{ url_for('delete_client', client_id=client.id) }}">
+              {{ delete_form.hidden_tag() }}
+              {{ delete_form.submit(class="text-red-600 hover:underline") }}
+            </form>
+
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="text-gray-500">No clients found. <a href="{{ url_for('add_client') }}" class="text-blue-600">Add your first client</a>.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Local Market Items{% endblock %}
+
+{% block content %}
+<div class="container-wrapper">
+  <div class="main-content">
+
+    <h1 class="text-2xl font-bold mb-6">Local Market Items</h1>
+
+    <!-- Add New Item Button -->
+    <a href="{{ url_for('add_local_market_item') }}" class="bg-blue-600 text-white px-4 py-2 rounded mb-4 inline-block">+ Add Local Market Item</a>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mb-4">
+          {% for category, message in messages %}
+            <div class="p-3 rounded text-white
+              {% if category == 'error' %}bg-red-500
+              {% elif category == 'success' %}bg-green-500
+              {% else %}bg-blue-500{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Items Table -->
+    {% if items %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white rounded-lg shadow">
+          <thead class="bg-gray-200">
+            <tr>
+              <th class="px-4 py-2">Item Name</th>
+              <th class="px-4 py-2">Recent Price</th>
+              <th class="px-4 py-2">Currency</th>
+              <th class="px-4 py-2">Source</th>
+              <th class="px-4 py-2">Last Updated</th>
+              <th class="px-4 py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+              <tr class="border-b hover:bg-gray-50">
+                <td class="px-4 py-2 font-medium">{{ item.name }}</td>
+                <td class="px-4 py-2">{{ item.recent_price }}</td>
+                <td class="px-4 py-2">{{ item.currency }}</td>
+                <td class="px-4 py-2">{{ item.source }}</td>
+                <td class="px-4 py-2 text-sm text-gray-500">
+                  {{ item.last_updated.strftime('%Y-%m-%d %H:%M') if item.last_updated else '-' }}
+                </td>
+                <td class="px-4 py-2 space-x-2">
+                  <a href="{{ url_for('edit_local_market_item', item_id=item.id) }}" class="text-blue-600 hover:underline text-sm">Edit</a>
+                  <form method="POST" action="{{ url_for('delete_local_market_item', item_id=item.id) }}" style="display: inline;">
+                    {{ delete_form.hidden_tag() }}
+                    <button type="submit" class="text-red-600 hover:underline text-sm"
+                            onclick="return confirm('Are you sure you want to delete {{ item.name }}?')">
+                      Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500">No local market items found. <a href="{{ url_for('add_local_market_item') }}" class="text-blue-600 hover:underline">Add your first item</a>.</p>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

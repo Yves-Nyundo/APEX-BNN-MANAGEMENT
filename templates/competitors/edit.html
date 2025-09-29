@@ -1,0 +1,60 @@
+<!-- templates/competitors/edit.html -->
+{% extends "base.html" %}
+{% block title %}Edit Competitor{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+  <h1 class="text-2xl font-bold mb-6 text-gray-800">Edit Competitor</h1>
+
+  <form method="POST" class="space-y-6">
+    {{ form.hidden_tag() }}
+
+    <div>
+      <label class="block font-medium text-gray-700 mb-1">{{ form.name.label }}</label>
+      {{ form.name(class="w-full border rounded p-2") }}
+      {% if form.name.errors %}
+        <p class="text-red-600 text-sm mt-1">{{ form.name.errors[0] }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label class="block font-medium text-gray-700 mb-1">{{ form.sector.label }}</label>
+      {{ form.sector(class="w-full border rounded p-2") }}
+    </div>
+
+    <div>
+      <label class="block font-medium text-gray-700 mb-1">{{ form.location.label }}</label>
+      {{ form.location(class="w-full border rounded p-2") }}
+    </div>
+
+    <div>
+      <label class="block font-medium text-gray-700 mb-1">{{ form.contact_email.label }}</label>
+      {{ form.contact_email(class="w-full border rounded p-2") }}
+      {% if form.contact_email.errors %}
+        <p class="text-red-600 text-sm mt-1">{{ form.contact_email.errors[0] }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label class="block font-medium text-gray-700 mb-1">{{ form.website.label }}</label>
+      {{ form.website(class="w-full border rounded p-2") }}
+      {% if form.website.errors %}
+        <p class="text-red-600 text-sm mt-1">{{ form.website.errors[0] }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label class="block font-medium text-gray-700 mb-1">{{ form.bid_count.label }}</label>
+      {{ form.bid_count(class="w-full border rounded p-2") }}
+      {% if form.bid_count.errors %}
+        <p class="text-red-600 text-sm mt-1">{{ form.bid_count.errors[0] }}</p>
+      {% endif %}
+    </div>
+
+    <div class="flex items-center space-x-4">
+      {{ form.submit(class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700") }}
+      <a href="{{ url_for('list_competitors') }}" class="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

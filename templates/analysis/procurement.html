@@ -1,0 +1,39 @@
+<!-- templates/analysis/procurement.html -->
+{% extends "base.html" %}
+{% block title %}Procurement Spending Analysis{% endblock %}
+
+{% block content %}
+<div class="container-wrapper">
+  <div class="main-content">
+
+    <h1 class="text-2xl font-bold mb-6">Procurement Spending Analysis</h1>
+
+    <div class="bg-blue-100 p-6 rounded-lg shadow mb-8">
+      <h2 class="text-lg font-semibold">Total Procurement Spend (Last 12 Months)</h2>
+      <p class="text-2xl font-bold">${{ "%.2f"|format(total_spent) }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow mb-8">
+      <h2 class="text-xl font-semibold mb-4">Spending Overview</h2>
+      <p>
+        Over the past year, your company has spent <strong>${{ "%.2f"|format(total_spent) }}</strong> on procurement.
+        This includes purchase prices, shipping costs, and import fees.
+      </p>
+      <p class="mt-2">
+        <strong>Top Suppliers:</strong> TBD (Future Enhancement)
+      </p>
+    </div>
+
+    <div class="bg-gray-50 p-6 rounded-lg shadow">
+      <h2 class="text-xl font-semibold mb-4">Recommendations</h2>
+      <ul class="list-disc pl-5 space-y-2">
+        <li>Negotiate bulk discounts with top suppliers</li>
+        <li>Switch from air to sea shipping where possible to reduce costs</li>
+        <li>Review delayed orders and identify bottlenecks</li>
+        <li>Track supplier performance (quality, delivery time)</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

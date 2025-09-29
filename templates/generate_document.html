@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-screen-xl mx-auto px-6 py-8" data-theme="dark">
+  <h2 class="text-center text-white text-2xl font-semibold mb-8">
+    {{ _('Generate Delivery Note') if document_type == 'delivery_note' else _('Generate Document') }}
+  </h2>
+
+  <form method="POST" id="document-form" class="space-y-10">
+    {{ form.hidden_tag() }}
+    <!-- ✅ CSRF Token (Critical) -->
+    {{ form.csrf_token or '' }}
+    <input type="hidden" name="document_type" value="{{ document_type }}">
+
+    <!-- Client Information -->
+    <section>
+      <h3 class="text-white text-lg font-medium mb-4">{{ _('Client Information') }}</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% for field_id, label in [('client', _('Client')), ('client-email', _('Email')), ('client-phone', _('Phone')), ('client-address', _('Address'))] %}
+        <div class="relative">
+          {% if field_id == 'client' %}
+            {{ form.client(class="peer form-select w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", id=field_id, placeholder=" ") }}
+          {% else %}
+            <input type="text" id="{{ field_id }}" class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded placeholder-transparent" placeholder=" " readonly>
+          {% endif %}
+          <label for="{{ field_id }}" class="floating-label">{{ label }}</label>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Document Details -->
+    <!-- <section>
+      <h3 class="text-white text-lg font-medium mb-4">{{ _('Document Details') }}</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for field, label in [(form.po_number, _('PO Number')), (form.issue_date, _('Issue Date')), (form.signing_person_name, _('Signing Person'))] %}
+        <div class="relative">
+          {{ field(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+          <label class="floating-label">{{ label }}</label>
+        </div>
+        {% endfor %}
+      </div>
+    </section> -->
+    <!-- Document Details -->
+    <section>
+      <h3 class="text-white text-lg font-medium mb-4">{{ _('Document Details') }}</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- PO Number -->
+        <div class="relative">
+          {{ form.po_number(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+          <label class="floating-label">{{ _('PO Number') }}</label>
+        </div>
+
+        <!-- Issue Date -->
+        <div class="relative">
+          {{ form.issue_date(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+          <label class="floating-label">{{ _('Issue Date') }}</label>
+        </div>
+
+        <!-- Due Date (Only shown for invoices/proformas) -->
+        <div class="relative" id="due-date-field" style="display: none;">
+          <input
+            type="date"
+            name="due_date"
+            id="due_date"
+            class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded"
+            value=""
+          >
+          <label for="due_date" class="floating-label">{{ _('Due Date') }}</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Signing Information -->
+    <!-- <section>
+      <h3 class="text-white text-lg font-medium mb-4">{{ _('Signing Information') }}</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="relative">
+          {{ form.signing_person_function(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+          <label class="floating-label">{{ _('Function') }}</label>
+        </div>
+      </div>
+    </section> -->
+      <!-- Signing Information -->
+    <section>
+      <h3 class="text-white text-lg font-medium mb-4">{{ _('Signing Information') }}</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Signing Person Name -->
+        <div class="relative">
+          <input
+            type="text"
+            name="signing_person_name"
+            id="signing_person_name"
+            class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded"
+            value="{{ request.form.get('signing_person_name', 'Yves Nyundo') }}"
+            required
+          >
+          <label for="signing_person_name" class="floating-label">{{ _('Signing Person Name') }}</label>
+        </div>
+
+        <!-- Signing Person Function -->
+        <div class="relative">
+          <input
+            type="text"
+            name="signing_person_function"
+            id="signing_person_function"
+            class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded"
+            value="{{ request.form.get('signing_person_function', 'CEO') }}"
+            required
+          >
+          <label for="signing_person_function" class="floating-label">{{ _('Function') }}</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- VAT Rate (Only for Invoices and Proforma) -->
+    {% if document_type != 'delivery_note' %}
+    <section>
+      <div class="relative">
+        <input
+          type="number"
+          id="vat_rate"
+          name="vat_rate"
+          class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded"
+          placeholder=" "
+          value="16.0"
+          min="0"
+          max="100"
+          step="0.01">
+        <label for="vat_rate" class="floating-label">{{ _('VAT Rate (%)') }}</label>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- Items -->
+    <section>
+      <h3 class="text-white text-lg font-medium mb-4">{{ _('Items') }}</h3>
+      <div id="items-container" class="space-y-4">
+        {% for item in form.items %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-{{ '5' if document_type != 'delivery_note' else '3' }} gap-4 item-row">
+          <!-- Description -->
+          <div class="relative">
+            {{ item.form.description(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+            <label class="floating-label">{{ _('Description') }}</label>
+          </div>
+
+          <!-- Quantity -->
+          <div class="relative">
+            {{ item.form.quantity(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+            <label class="floating-label">{{ _('Quantity') }}</label>
+          </div>
+
+          <!-- Unit Price (Invoice only) -->
+          {% if document_type != 'delivery_note' %}
+          <div class="relative">
+            {{ item.form.unit_price(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+            <label class="floating-label">{{ _('Unit Price') }}</label>
+          </div>
+          {% endif %}
+
+          <!-- Comment -->
+          <div class="relative">
+            {{ item.form.comment(class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded", placeholder=" ") }}
+            <label class="floating-label">{{ _('Comment') }}</label>
+          </div>
+
+          <!-- Remove Button -->
+          <div class="flex items-center justify-end">
+            <button type="button" class="bg-red-600 text-white px-3 py-2 rounded remove-item-btn">×</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <button type="button" id="add-item-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-4">
+        {{ _('Add Item') }}
+      </button>
+    </section>
+
+    <!-- Totals (Only for Invoices) -->
+    {% if document_type != 'delivery_note' %}
+    <section>
+      <h3 class="text-white text-lg font-medium mb-4">{{ _('Totals') }}</h3>
+      <div class="bg-gray-800 p-6 rounded-lg grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
+        <div></div>
+        <div class="space-y-2">
+          <div class="flex justify-between"><span>{{ _('Subtotal') }}:</span> <span id="subtotal-display">0.00</span> USD</div>
+          <div class="flex justify-between"><span>{{ _('VAT') }}:</span> <span id="vat-display">0.00</span> USD</div>
+          <div class="flex justify-between font-bold"><span>{{ _('Total') }}:</span> <span id="total-display">0.00</span> USD</div>
+        </div>
+      </div>
+      <input type="hidden" id="hidden_subtotal" name="subtotal" value="0">
+      <input type="hidden" id="hidden_vat_amount" name="vat_amount" value="0">
+      <input type="hidden" id="hidden_total_amount" name="total_amount" value="0">
+    </section>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-4 mt-8">
+      {{ form.submit(class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700") }}
+      <!-- <button type="button" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700" data-bs-toggle="modal" data-bs-target="#pdfPreviewModal">
+        {{ _('Preview PDF') }}
+      </button> -->
+      <button type="button" id="preview-btn"
+        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+        {{ _('Preview PDF') }}
+      </button>
+
+      <a href="{{ url_for('dashboard') }}" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600">
+        {{ _('Cancel') }}
+      </a>
+    </div>
+  </form>
+
+  <!-- PDF Preview Modal -->
+  <div class="modal fade" id="pdfPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content bg-gray-900 text-white">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ _('Document Preview') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <iframe id="pdf-preview-frame" class="w-full h-[600px] border-none"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Labels CSS -->
+<style>
+  .floating-label {
+    position: absolute;
+    left: 1rem;
+    top: 0.75rem;
+    font-size: 0.875rem;
+    color: #9ca3af;
+    transition: all 0.2s ease;
+  }
+  .peer:placeholder-shown + .floating-label {
+    top: 0.75rem;
+    font-size: 0.875rem;
+  }
+  .peer:focus + .floating-label,
+  .peer.has-value + .floating-label {
+    top: 0;
+    font-size: 0.75rem;
+    color: #60a5fa;
+  }
+</style>
+
+<script>
+let itemIndex = {{ form.items|length }};  // ✅ Global
+const labelDescription = "{{ _('Description') }}";
+const labelQuantity = "{{ _('Quantity') }}";
+const labelUnitPrice = "{{ _('Unit Price') }}";
+const labelComment = "{{ _('Comment') }}";
+document.addEventListener('DOMContentLoaded', function () {
+  const docType = document.querySelector('input[name="document_type"]').value;
+  //let itemIndex = {{ form.items|length }};
+
+  // ———————————————————————
+  // 1. Update Floating Labels
+  // ———————————————————————
+  function updateFloatingLabels() {
+    document.querySelectorAll('.peer').forEach(input => {
+      const hasValue = input.value && input.value.trim() !== '';
+      input.classList.toggle('has-value', hasValue);
+    });
+  }
+
+  updateFloatingLabels();
+  document.addEventListener('input', updateFloatingLabels);
+
+  // ———————————————————————
+  // 2. Auto-fill Client Info
+  // ———————————————————————
+  const clientSelect = document.getElementById('client');
+  if (clientSelect) {
+    clientSelect.addEventListener('change', function () {
+      const clientId = this.value;
+      if (!clientId || clientId == '-1' || isNaN(Number(clientId))) {
+        ['client-email', 'client-phone', 'client-address'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+        updateFloatingLabels();
+        return;
+      }
+
+      fetch(`/api/client/${clientId}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Client not found');
+          return res.json();
+        })
+        .then(data => {
+          const fields = {
+            'client-email': data.email,
+            'client-phone': data.phone,
+            'client-address': data.address
+          };
+          Object.entries(fields).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) {
+              el.value = value || '';
+            }
+          });
+          updateFloatingLabels();
+          updateTotals();
+        })
+        .catch(err => {
+          console.error('Failed to load client:', err);
+          alert('{{ _('Failed to load client information.') }}');
+        });
+    });
+
+    if (clientSelect.value && clientSelect.value !== '-1' && !isNaN(Number(clientSelect.value))) {
+      clientSelect.dispatchEvent(new Event('change'));
+    }
+  }
+
+  // ———————————————————————
+  // 3. Add New Item Row
+  // ———————————————————————
+  document.getElementById('add-item-btn')?.addEventListener('click', function () {
+    const container = document.getElementById('items-container');
+    const row = document.createElement('div');
+    row.className = `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${docType !== 'delivery_note' ? '5' : '3'} gap-4 item-row`;
+
+    let fieldsHTML = `
+      <div class="relative">
+        <input type="text" name="items-${itemIndex}-description" class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded" placeholder=" ">
+        <label class="floating-label">{{ _('Description') }}</label>
+      </div>
+      <div class="relative">
+        <input type="number" name="items-${itemIndex}-quantity" class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded" value="1" min="1">
+        <label class="floating-label">{{ _('Quantity') }}</label>
+      </div>
+    `;
+
+    if (docType !== 'delivery_note') {
+      fieldsHTML += `
+        <div class="relative">
+          <input type="number" step="0.01" name="items-${itemIndex}-unit_price" class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded" placeholder=" " min="0" value="0.00">
+          <label class="floating-label">{{ _('Unit Price') }}</label>
+        </div>
+      `;
+    }
+
+    fieldsHTML += `
+      <div class="relative">
+        <input type="text" name="items-${itemIndex}-comment" class="peer w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded" placeholder=" ">
+        <label class="floating-label">{{ _('Comment') }}</label>
+      </div>
+      <div class="flex items-center justify-end">
+        <button type="button" class="bg-red-600 text-white px-3 py-2 rounded remove-item-btn">×</button>
+      </div>
+    `;
+
+    row.innerHTML = fieldsHTML;
+    container.appendChild(row);
+    itemIndex++;
+    updateFloatingLabels();
+    updateTotals();
+  });
+
+  // ———————————————————————
+  // 4. Remove Item Row
+  // ———————————————————————
+  document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('remove-item-btn')) {
+      e.target.closest('.item-row').remove();
+      updateTotals();
+    }
+  });
+
+  // ———————————————————————
+  // 5. Update Totals
+  // ———————————————————————
+  function updateTotals() {
+    if (docType === 'delivery_note') return;
+
+    let subtotal = 0;
+    const quantityInputs = document.querySelectorAll('input[name*="-quantity"]');
+    const priceInputs = document.querySelectorAll('input[name*="-unit_price"]');
+
+    quantityInputs.forEach((qtyEl, i) => {
+      const qty = parseFloat(qtyEl.value) || 0;
+      const price = priceInputs[i] ? (parseFloat(priceInputs[i].value) || 0) : 0;
+      subtotal += qty * price;
+    });
+
+    const vatRate = parseFloat(document.getElementById('vat_rate')?.value) || 0;
+    const vatAmount = (subtotal * vatRate) / 100;
+    const totalAmount = subtotal + vatAmount;
+
+    document.getElementById('subtotal-display').textContent = subtotal.toFixed(2);
+    document.getElementById('vat-display').textContent = vatAmount.toFixed(2);
+    document.getElementById('total-display').textContent = totalAmount.toFixed(2);
+
+    document.getElementById('hidden_subtotal').value = subtotal.toFixed(2);
+    document.getElementById('hidden_vat_amount').value = vatAmount.toFixed(2);
+    document.getElementById('hidden_total_amount').value = totalAmount.toFixed(2);
+  }
+
+  // Attach VAT listener
+  document.getElementById('vat_rate')?.addEventListener('input', updateTotals);
+
+  // Update on item input
+  document.addEventListener('input', function (e) {
+    const name = e.target.name;
+    if (name.includes('-quantity') || name.includes('-unit_price') || name === 'vat_rate') {
+      updateTotals();
+    }
+  });
+
+  // Initial calculation
+  updateTotals();
+
+  // ———————————————————————
+  // 6. Show/Hide Conditional Fields (due_date, vat_rate)
+  // ———————————————————————
+  function updateDocumentTypeFields() {
+    const docType = document.querySelector("input[name='document_type']").value.toLowerCase();
+    const dueDateField = document.querySelector("#due-date-field");
+    const vatRateSection = document.querySelector("section:has(#vat_rate)");
+
+    if (["invoice", "proforma", "proforma_invoice"].includes(docType)) {
+      if (dueDateField) dueDateField.style.display = "block";
+      if (vatRateSection) vatRateSection.style.display = "block";
+    } else {
+      if (dueDateField) dueDateField.style.display = "none";
+      if (vatRateSection) vatRateSection.style.display = "none";
+    }
+  }
+
+  // Run once on load
+  updateDocumentTypeFields();
+
+  // ———————————————————————
+  // 7. PDF Preview Button
+  // ———————————————————————
+  document.getElementById('preview-btn')?.addEventListener('click', function () {
+    const form = document.getElementById('document-form');
+    const formData = new FormData(form);
+
+    // ✅ Debug: Log what’s being sent
+    console.log("📤 Sending to /preview_document:");
+    for (let [key, value] of formData.entries()) {
+      console.log("   ", key, "=", value);
+    }
+
+    fetch('/preview_document', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => {
+      if (!res.ok) {
+        return res.text().then(text => { throw new Error(`HTTP ${res.status}: ${text}`); });
+      }
+      return res.blob();
+    })
+    .then(blob => {
+      if (blob.type === 'application/pdf') {
+        const url = URL.createObjectURL(blob);
+        document.getElementById('pdf-preview-frame').src = url;
+        const modal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
+        modal.show();
+      } else {
+        alert('❌ Invalid response: Expected PDF.');
+      }
+    })
+    .catch(err => {
+      console.error('🚨 Preview failed:', err);
+      alert('Failed to generate preview. Check console for details.');
+    });
+  });
+
+  // ———————————————————————
+  // 8. Auto-Fill Due Date (issue_date + 30 days)
+  // ———————————————————————
+  document.getElementById("issue_date")?.addEventListener("change", function () {
+    const docType = document.querySelector("input[name='document_type']").value.toLowerCase();
+    if (!["invoice", "proforma", "proforma_invoice"].includes(docType)) return;
+
+    const issueDate = new Date(this.value);
+    if (isNaN(issueDate)) return;
+
+    const dueDateInput = document.getElementById("due_date");
+    if (dueDateInput && !dueDateInput.value) {
+      const dueDate = new Date(issueDate);
+      dueDate.setDate(dueDate.getDate() + 30);
+      dueDateInput.value = dueDate.toISOString().split("T")[0];
+      updateFloatingLabels(); // Reflect change in label position
+    }
+  });
+});
+</script>
+{% endblock %}

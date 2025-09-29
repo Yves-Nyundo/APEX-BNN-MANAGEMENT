@@ -1,0 +1,44 @@
+<!-- templates/local_market/add.html -->
+{% extends "base.html" %}
+{% block title %}Add Local Market Item{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Add Local Market Item</h1>
+
+<form method="POST" action="{{ url_for('add_local_market_item') }}" class="space-y-6">
+  {{ form.hidden_tag() }}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <label class="block font-medium mb-1">Item Name *</label>
+      {{ form.name(class="w-full border rounded p-2") }}
+    </div>
+    <div>
+      <label class="block font-medium mb-1">Recent Price ($)</label>
+      {{ form.recent_price(class="w-full border rounded p-2") }}
+    </div>
+  </div>
+
+  <div>
+    <label class="block font-medium mb-1">Description</label>
+    {{ form.description(class="w-full border rounded p-2") }}
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <label class="block font-medium mb-1">Currency</label>
+      {{ form.currency(class="w-full border rounded p-2") }}
+    </div>
+    <div>
+      <label class="block font-medium mb-1">Source</label>
+      {{ form.source(class="w-full border rounded p-2") }}
+    </div>
+  </div>
+
+  <button type="submit" class="bg-yellow-600 text-white px-6 py-2 rounded hover:bg-yellow-700">
+    Add Item
+  </button>
+  <a href="{{ url_for('list_local_market') }}" class="text-gray-600 ml-4 hover:underline">Cancel</a>
+</form>
+
+{% endblock %}

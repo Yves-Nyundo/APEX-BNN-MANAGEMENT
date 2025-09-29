@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Edit Procurement Item{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Edit Procurement Item</h1>
+
+<form method="POST" class="space-y-6">
+  {{ form.hidden_tag() }}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      {{ form.name.label(class="block font-medium mb-1") }}
+      {{ form.name(class="w-full border rounded p-2") }}
+      {% if form.name.errors %}
+        <p class="text-red-600 text-sm">{{ form.name.errors[0] }}</p>
+      {% endif %}
+    </div>
+    <div>
+      {{ form.supplier_id.label(class="block font-medium mb-1") }}
+      {{ form.supplier_id(class="w-full border rounded p-2") }}
+      {% if form.supplier_id.errors %}
+        <p class="text-red-600 text-sm">{{ form.supplier_id.errors[0] }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div>
+      {{ form.purchase_price.label(class="block font-medium mb-1") }}
+      {{ form.purchase_price(class="w-full border rounded p-2") }}
+    </div>
+    <div>
+      {{ form.shipping_cost.label(class="block font-medium mb-1") }}
+      {{ form.shipping_cost(class="w-full border rounded p-2") }}
+    </div>
+    <div>
+      {{ form.shipping_mode.label(class="block font-medium mb-1") }}
+      {{ form.shipping_mode(class="w-full border rounded p-2") }}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      {{ form.purchase_date.label(class="block font-medium mb-1") }}
+      {{ form.purchase_date(class="w-full border rounded p-2") }}
+    </div>
+    <div>
+      {{ form.status.label(class="block font-medium mb-1") }}
+      {{ form.status(class="w-full border rounded p-2") }}
+    </div>
+  </div>
+
+  <div class="flex space-x-4">
+    <button type="submit" class="bg-orange-600 text-white px-6 py-2 rounded hover:bg-orange-700">Update Procurement</button>
+    <a href="{{ url_for('list_procurement_items') }}" class="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700">Cancel</a>
+  </div>
+</form>
+{% endblock %}

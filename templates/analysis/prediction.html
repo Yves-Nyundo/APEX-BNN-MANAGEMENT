@@ -1,0 +1,64 @@
+<!-- templates/analysis/prediction.html -->
+{% extends "base.html" %}
+{% block title %}Business Prediction{% endblock %}
+
+{% block content %}
+<div class="container-wrapper">
+  <div class="main-content">
+
+    <h1 class="text-2xl font-bold mb-6">Business Outlook & Predictions</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-teal-100 p-6 rounded-lg shadow">
+        <h2 class="text-lg font-semibold">Pending Bids</h2>
+        <p class="text-2xl font-bold">{{ pending_bids }}</p>
+      </div>
+      <div class="bg-orange-100 p-6 rounded-lg shadow">
+        <h2 class="text-lg font-semibold">Potential Revenue</h2>
+        <p class="text-2xl font-bold">$XX,XXX</p>
+      </div>
+      <div class="bg-purple-100 p-6 rounded-lg shadow">
+        <h2 class="text-lg font-semibold">Win Rate</h2>
+        <p class="text-2xl font-bold">XX%</p>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow mb-8">
+      <h2 class="text-xl font-semibold mb-4">Recent Bids</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-200">
+            <tr>
+              <th class="px-4 py-2">Item</th>
+              <th class="px-4 py-2">Bid Price</th>
+              <th class="px-4 py-2">Date</th>
+              <th class="px-4 py-2">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for bid in recent_invoices %}
+            <tr class="border-b">
+              <td class="px-4 py-2">{{ bid.item_description }}</td>
+              <td class="px-4 py-2">${{ "%.2f"|format(bid.our_bid_price) }}</td>
+              <td class="px-4 py-2">{{ bid.bid_date.strftime('%Y-%m-%d') }}</td>
+              <td class="px-4 py-2">
+                <span class="status-badge status-{{ bid.status.lower() }}">{{ bid.status }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="bg-gray-50 p-6 rounded-lg shadow">
+      <h2 class="text-xl font-semibold mb-4">Forecast</h2>
+      <p>
+        Based on current bids and market trends, your business is positioned for growth.
+        Focus on high-margin projects and strengthen relationships with winning clients.
+      </p>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
