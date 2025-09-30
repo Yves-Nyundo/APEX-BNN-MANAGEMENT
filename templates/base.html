@@ -14,7 +14,7 @@
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <style>
+  <!-- <style>
     body {
       font-family: 'Inter', sans-serif;
     }
@@ -33,17 +33,67 @@
     [data-theme="dark"] .text-gray-700 {
       color: #d1d5db;
     }
-  </style>
-</head>
-<script>
-  // Set dynamic year in footer
-  document.addEventListener('alpine:init', () => {
-    Alpine.store('footer', {
-      year: new Date().getFullYear()
-    });
-  });
-</script>
-<body x-data="{ sidebarOpen: true }" class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+  </style> -->
+   <style>
+    /* === Default (Light Mode) === */
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8f9fa;
+      color: #212529; /* Dark gray – highly readable on light */
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* === Dark Mode Variables & Overrides === */
+    [data-theme="dark"] {
+      --bg: #111827;     /* Deep blue-black */
+      --text: #f3f4f6;   /* Soft white */
+      --card: #1e293b;   /* Slightly lighter than bg for cards */
+      --border: #334155; /* Muted border */
+    }
+
+    /* Apply dark theme to body */
+    [data-theme="dark"] body {
+      background-color: var(--bg);
+      color: var(--text);
+    }
+
+    /* Ensure white background becomes dark in cards/panels */
+    [data-theme="dark"] .bg-white {
+      background-color: var(--card) !important;
+    }
+
+    /* Fix low-contrast text (Tailwind's text-gray-700 is too dim in dark mode) */
+    [data-theme="dark"] .text-gray-700,
+    [data-theme="dark"] .text-gray-600,
+    [data-theme="dark"] .text-gray-500 {
+      color: #d1d5db !important; /* Brighter gray */
+    }
+
+    /* Make subtle links/buttons readable */
+    [data-theme="dark"] .text-secondary,
+    [data-theme="dark"] .text-muted {
+      color: #cbd5e1 !important;
+    }
+
+    /* Input fields – ensure visibility */
+    [data-theme="dark"] input,
+    [data-theme="dark"] select,
+    [data-theme="dark"] textarea {
+      background-color: #1e293b !important;
+      color: #ffffff !important;
+      border-color: #475569 !important;
+    }
+
+    /* Optional: Add subtle card borders for depth */
+    [data-theme="dark"] .card, 
+    [data-theme="dark"] .p-6, 
+    [data-theme="dark"] .overflow-hidden {
+      border: 1px solid var(--border) !important;
+    }
+  </style> 
+<body x-data="{ sidebarOpen: true }" 
+      :class="theme === 'dark' ? 'dark' : ''"
+      class="min-h-screen bg-gray-50 text-gray-900 transition-colors duration-300">
 
   <!-- Flash Messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -95,7 +145,7 @@
       <nav class="p-4 space-y-2 text-sm">
 
         <!-- Theme Toggle -->
-        <div class="p-4 border-t border-gray-700">
+        <!-- <div class="p-4 border-t border-gray-700">
           <button @click="theme = theme === 'light' ? 'dark' : 'light'; localStorage.setItem('theme', theme)"
               class="w-full text-left px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,8 +156,17 @@
             </svg>
             <span x-show="sidebarOpen" x-text="theme === 'light' ? 'Dark Mode' : 'Light Mode'"></span>
           </button>
+        </div> -->
+        <div class="p-4 border-t border-gray-700">
+          <button @click="theme = theme === 'light' ? 'dark' : 'light'; localStorage.setItem('theme', theme)"
+            class="w-full text-left px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
+              <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path x-show="theme === 'light'" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                <path x-show="theme === 'dark'" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              <span x-show="sidebarOpen" x-text="theme === 'light' ? 'Dark Mode' : 'Light Mode'" class="text-sm"></span>
+          </button>
         </div>
-
         <!-- Dashboard -->
         <a href="{{ url_for('dashboard') }}" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
