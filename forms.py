@@ -17,6 +17,14 @@ class MyForm(FlaskForm):
         super().__init__(*args, **kwargs)
         from models_core.models import Supplier, Client
         self.supplier.choices = [(s.id, s.name) for s in Supplier.query.all()]
+
+def get_inventory_status_choices():
+    return [
+        (InventoryStatus.IN_STOCK.name, "In Stock"),
+        (InventoryStatus.LOW_STOCK.name, "Low Stock"),
+        (InventoryStatus.OUT_OF_STOCK.name, "Out of Stock"),
+        (InventoryStatus.PENDING_RESTOCK.name, "Pending Restock")
+    ]
 # -------------------
 # Authentication Forms
 # -------------------
@@ -184,7 +192,13 @@ class InvoiceItemForm(Form):
         validators=[Optional(), NumberRange(min=0)]
     )
     comment = StringField("Comment")
-
+    # status = SelectField(
+    #     "Status",
+    #     choices=get_inventory_status_choices(),
+    #     validators=[DataRequired()]
+    # )
+    status = SelectField("Status", validators=[DataRequired()])
+    submit = SubmitField("Add Item")
 
 
 

@@ -143,7 +143,7 @@ class OurProductService(db.Model):
     quantity_on_hand = db.Column(db.Integer)
     reorder_point = db.Column(db.Integer)
     unit_cost = db.Column(db.Float)
-
+    status = db.Column(db.String(50), nullable=False, default="IN_STOCK")
 class LocalMarketItem(db.Model):
     __tablename__ = 'local_market_items'
     id = db.Column(db.Integer, primary_key=True)

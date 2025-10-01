@@ -98,6 +98,7 @@ with app.app_context():
         InventoryItem,
         get_or_create_company_settings,
         
+        
     )
 
 
@@ -118,6 +119,7 @@ from forms import (
     InvoiceItemForm,
     GenerateDocumentForm,
     CreateUserForm,
+    get_inventory_status_choices,
 )
 
 from flask_babel import Babel
@@ -383,15 +385,6 @@ def list_users():
 # Context Processors
 # ========================
 
-# @app.context_processor
-# def inject_user():
-#     user = None
-#     if 'user_id' in session:
-#         try:
-#             user = db.session.get(User, session['user_id'])
-#         except Exception as e:
-#             print(f"Error fetching user: {e}")
-#     return {'current_user': user}
 
 
 @app.context_processor
@@ -819,51 +812,130 @@ def delete_procurement_item(item_id):
 # Inventory
 # ========================
 
+# @app.route('/inventory_items')
+# @login_required
+# def list_inventory():
+#     q = request.args.get('q', '').strip()
+#     status = request.args.get('status', '')
+#     category = request.args.get('category', '')
+#     query = OurProductService.query
+#     if q:
+#         query = query.filter(OurProductService.name.ilike(f"%{q}%"))
+#     if status == 'low_stock':
+#         query = query.filter(OurProductService.quantity_on_hand <= OurProductService.reorder_point)
+#     if status == 'out_of_stock':
+#         query = query.filter(OurProductService.quantity_on_hand == 0)
+#     if category:
+#         query = query.filter(OurProductService.category == category)
+#     items = query.all()
+#     categories = db.session.query(OurProductService.category).distinct().all()
+#     categories = [c[0] for c in categories if c[0]]
+#     delete_form = DeleteItemForm()
+#     return render_template('inventory/list.html', items=items, categories=categories, delete_form=delete_form)
+
 @app.route('/inventory_items')
 @login_required
 def list_inventory():
+    # Get filters from query params
     q = request.args.get('q', '').strip()
-    status = request.args.get('status', '')
+    status_filter = request.args.get('status', '')  # renamed to avoid conflict with model
     category = request.args.get('category', '')
+
+    # Start query
     query = OurProductService.query
+
+    # Apply search filter
     if q:
         query = query.filter(OurProductService.name.ilike(f"%{q}%"))
-    if status == 'low_stock':
+
+    # Apply stock status filters
+    if status_filter == 'low_stock':
         query = query.filter(OurProductService.quantity_on_hand <= OurProductService.reorder_point)
-    if status == 'out_of_stock':
+    elif status_filter == 'out_of_stock':
         query = query.filter(OurProductService.quantity_on_hand == 0)
+    # Note: 'in_stock' can be added if needed
+
+    # Apply category filter
     if category:
         query = query.filter(OurProductService.category == category)
-    items = query.all()
-    categories = db.session.query(OurProductService.category).distinct().all()
-    categories = [c[0] for c in categories if c[0]]
-    delete_form = DeleteItemForm()
-    return render_template('inventory/list.html', items=items, categories=categories, delete_form=delete_form)
 
+    # Paginate results
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    try:
+        items = query.paginate(page=page, per_page=per_page, error_out=False)
+    except Exception as e:
+        # Fallback in case paginate fails (e.g. during debugging)
+        import logging
+        logging.error("Pagination failed:", exc_info=True)
+        items = []
+
+    # Get unique categories for dropdown
+    try:
+        categories_query = db.session.query(OurProductService.category).distinct().all()
+        categories = [c[0] for c in categories_query if c[0]]
+        categories.sort()
+    except Exception:
+        categories = []
+
+    # CSRF form for delete action
+    delete_form = DeleteItemForm()
+
+    return render_template(
+        'inventory/list.html',
+        items=items,
+        categories=categories,
+        delete_form=delete_form
+    )
 
 @app.route('/inventory_items/add', methods=['GET', 'POST'])
 @login_required
 @role_required(['accountant', 'admin'])
 def add_inventory_item():
     form = InventoryItemForm()
-    form.supplier_id.choices = [(s.id, s.name) for s in Supplier.query.all()]
-    if form.validate_on_submit():
-        new_item = OurProductService(
-            name=form.name.data,
-            description=form.description.data,
-            standard_price=form.standard_price.data,
-            cogs=form.cogs.data,
-            category=form.category.data,
-            quantity_on_hand=form.quantity_on_hand.data,
-            reorder_point=form.reorder_point.data,
-            unit_cost=form.unit_cost.data
-        )
-        db.session.add(new_item)
-        db.session.commit()
-        flash(f"✅ Inventory item '{new_item.name}' added successfully.", "success")
-        return redirect(url_for('list_inventory'))
-    return render_template('inventory/add.html', form=form)
+    form.status.choices = get_inventory_status_choices()
 
+    if form.validate_on_submit():
+        print("✅ Form validated!")  # Debug step 1
+        try:
+            new_item = OurProductService(
+                name=form.name.data.strip(),
+                description=form.description.data,
+                category=form.category.data,
+                currency=form.currency.data.upper().strip(),
+                quantity_on_hand=form.quantity_on_hand.data or 0,
+                reorder_point=form.reorder_point.data or 0,
+                unit_cost=float(form.unit_cost.data) if form.unit_cost.data else 0.0,
+                standard_price=float(form.standard_price.data) if form.standard_price.data else 0.0,
+                cogs=float(form.cogs.data) if form.cogs.data else 0.0,
+                is_active=form.is_active.data,
+                status=form.status.data,
+                # supplier=form.supplier.data
+            )
+            new_item.supplier = form.supplier.data
+            print("🎯 Created new_item:", new_item.name, "| Status:", new_item.status)  # Debug step 2
+
+            db.session.add(new_item)
+            print("➕ Added to session")  # Debug step 3
+            print("📤 Raw POST data:", dict(request.form))
+            db.session.commit()  # ← This saves to DB
+            print("💾 COMMITTED to database!")  # Success!
+
+            flash(f"✅ '{new_item.name}' added successfully.", "success")
+            return redirect(url_for('list_inventory'))
+
+        except Exception as e:
+            db.session.rollback()
+            print("🔥 ERROR: Failed to save item:", str(e))  # Show exact error
+            flash(f"❌ Save failed: {str(e)}", "error")
+
+    else:
+        if request.method == 'POST':
+            print("❌ Form validation failed:")
+            for field, errors in form.errors.items():
+                print(f" - {field}: {errors}")
+
+    return render_template('inventory/add.html', form=form)
 
 @app.route('/inventory_items/edit/<int:item_id>', methods=['GET', 'POST'])
 @login_required
@@ -871,7 +943,7 @@ def add_inventory_item():
 def edit_inventory_item(item_id):
     item = OurProductService.query.get_or_404(item_id)
     form = InventoryItemForm(obj=item)
-    form.supplier_id.choices = [(s.id, s.name) for s in Supplier.query.all()]
+
     if form.validate_on_submit():
         try:
             form.populate_obj(item)
@@ -882,8 +954,8 @@ def edit_inventory_item(item_id):
             db.session.rollback()
             print(f"Error updating inventory item: {e}")
             flash("An error occurred while updating the item.", "error")
-    return render_template('inventory/edit.html', item=item, form=form)
 
+    return render_template('inventory/edit.html', form=form, item=item)
 
 @app.route('/inventory_items/delete/<int:item_id>', methods=['POST'])
 @login_required
@@ -1533,24 +1605,7 @@ def view_document(invoice_id):
 
 
 
-# @app.route('/download_document/<int:invoice_id>')
-# @login_required
-# def download_document(invoice_id):
-#     invoice = db.session.get(Invoice, invoice_id)
-#     if not invoice or not invoice.pdf_file:
-#         abort(404)
 
-#     pdf_path = os.path.join(app.static_folder, invoice.pdf_file)
-#     if not os.path.exists(pdf_path):
-#         flash("PDF file not found.", "error")
-#         return redirect(url_for('view_document', invoice_id=invoice_id))
-
-#     return send_file(
-#         pdf_path,
-#         as_attachment=True,
-#         download_name=f"{invoice.invoice_number}.pdf",
-#         mimetype='application/pdf'
-#     )
 
 @app.route('/download_document/<int:invoice_id>')
 @login_required
@@ -1607,109 +1662,7 @@ def search_documents():
         ).all()
     return render_template("search_results.html", results=results, query=query)
 
-# @app.route("/preview_document", methods=["POST"])
-# @login_required
-# def preview_document():
-#     print("\n" + "=" * 50)
-#     print("📥 RECEIVED FORM DATA:")
-#     for key, value in request.form.items():
-#         print(f"  {key} = {value} (type: {type(value)})")
-#     print("=" * 50)
 
-#     document_type = request.form.get("document_type", "invoice").lower()
-#     if document_type == "proforma_invoice":
-#         document_type = "proforma"
-#     if document_type not in ["invoice", "proforma", "delivery_note"]:
-#         return "Invalid document type", 400
-#     # 🔥 DEBUG: Log incoming request
-#     print("\n" + "="*50)
-#     print("📄 /generate_document - METHOD:", request.method)
-#     print("📌 Document Type:", document_type)
-    
-#     if request.method == 'POST':
-#         print("📥 POST DATA RECEIVED:")
-#         for key, value in request.form.items():
-#             print(f"  {key} = {value} (type: {type(value)})")
-        
-#         # Also log keys for hidden/missing fields
-#         print("🔍 Form keys:", list(request.form.keys()))
-    
-#     print("="*50)
-
-#     form = GenerateDocumentForm()
-#     clients = Client.query.all()
-#     form.client.choices = [(c.id, c.name) for c in clients] or [(-1, "No clients available")]
-#     form.process(request.form)
-
-#     if not form.validate():
-#         print("❌ VALIDATION FAILED:", form.errors)
-#         return "Validation failed", 400
-
-#     # Get client
-#     client = None
-#     try:
-#         client_id = int(form.client.data)
-#         if client_id > 0:
-#             client = db.session.get(Client, client_id)
-#     except Exception as e:
-#         print(f"❌ Invalid client ID: {form.client.data}, error: {e}")
-
-#     # Build items
-#     items_list = []
-#     for item in form.items:
-#         desc = (item.form.description.data or "").strip()
-#         qty = item.form.quantity.data or 0
-#         comment = (item.form.comment.data or "").strip()
-#         if not desc and qty == 0:
-#             continue
-#         from decimal import Decimal
-
-# # Safely convert to string first, then Decimal
-#     def safe_decimal(val, default='0'):
-#         try:
-#             return Decimal(str(val))
-#         except:
-#             return Decimal(default)
-
-#     item_data = {
-#         "description": desc,
-#         "quantity": safe_decimal(qty),
-#         "comment": comment,
-#     }
-#     if document_type != "delivery_note":
-#         item_data["unit_price"] = safe_decimal(item.form.unit_price.data)
-#     items_list.append(item_data)
-
-#     form_data = {
-#         "document_type": document_type,
-#         "client_name": getattr(client, "name", "Unknown"),
-#         "client_address": getattr(client, "address", "N/A"),
-#         "po_number": form.po_number.data or "",
-#         "issue_date": form.issue_date.data.strftime("%Y-%m-%d") if form.issue_date.data else "N/A",
-#         "due_date": form.due_date.data.strftime("%Y-%m-%d") if form.due_date.data else "N/A",
-#         "signing_person_name": form.signing_person_name.data or "",
-#         "signing_person_function": form.signing_person_function.data or "",
-#         "items": items_list,
-#     }
-#     if document_type != "delivery_note":
-#         form_data["vat_rate"] = float(form.vat_rate.data or 0)
-
-#     try:
-#         pdf_bytes = generate_invoice_pdf(
-#             form_data=form_data,
-#             preview=True,
-#             document_type=document_type
-#         )
-#         return Response(
-#             pdf_bytes,
-#             mimetype="application/pdf",
-#             headers={"Content-Disposition": 'inline; filename="preview.pdf"'},
-#         )
-#     except Exception as e:
-#         print(f"❌ PDF generation failed: {e}")
-#         import traceback
-#         traceback.print_exc()
-#         return "Failed to generate PDF", 500
 
 @app.route("/preview_document", methods=["POST"])
 @login_required
