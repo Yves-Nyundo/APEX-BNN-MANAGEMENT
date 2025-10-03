@@ -155,34 +155,37 @@
 <body class="{{ 'delivery-note' if invoice.document_type == 'delivery_note' else '' }}">
   <div class="container">
 
-    <!-- Header: Company Left, Client Right -->
-    <div class="header">
-      <div class="company-info">
-        <strong>APEX BNN Services</strong><br>
-        Kapenda 89, Makutano<br>
-        Lubumbashi Commune, Haut-Katanga<br>
-        {% if company_settings and company_settings.phone %}{{ company_settings.phone }}<br>{% endif %}
-        {% if company_settings and company_settings.email %}{{ company_settings.email }}<br>{% endif %}
+    
+    <!-- Unified Header with Company ID & Document Info -->
+    <div class="flex justify-between mb-6">
+      <!-- Company Info + ID -->
+      <div>
+        
+         <h3 class="text-xl font-bold text-gray-800">{{ company_settings.name }}</h3>
+        <p>{{ company_settings.address }}</p>
+        {% if company_settings.phone %}
+          <p>📞 {{ company_settings.phone }}</p>
+        {% endif %}
+        {% if company_settings.email %}
+          <p>✉️ <a href="mailto:{{ company_settings.email }}">{{ company_settings.email }}</a></p>
+        {% endif %}
+        {% if company_settings.website %}
+          <p>🌐 <a href="https://{{ company_settings.website }}" target="_blank">{{ company_settings.website }}</a></p>
+        {% endif %}
       </div>
-      <div class="client-info">
-        <strong>{{ invoice.client.name }}</strong><br>
-        {{ invoice.client.address | replace('\n', '<br>') | safe }}<br>
-        {% if invoice.client.email %}{{ invoice.client.email }}<br>{% endif %}
+
+      <!-- Document Info -->
+      <div class="text-right">
+        <!-- Document Type & Number -->
+        <h2 class="text-2xl font-bold text-red-600 uppercase">
+          {{ invoice.document_type | replace('_', ' ') | title }} #{{ invoice.document_id or invoice.invoice_number }}
+        </h2>
+        <p><strong>Date:</strong> {{ invoice.issue_date.strftime('%Y-%m-%d') if invoice.issue_date else 'N/A' }}</p>
+    
+        <!-- PO Number -->
+        <p><strong>PO Number:</strong> {{ invoice.po_number or '-' }}</p>
       </div>
     </div>
-
-    <!-- Document Type Banner -->
-    <div class="doc-type">
-      {{ invoice.document_type | replace('_', ' ') | title }}
-    </div>
-
-    <!-- Document Meta -->
-    <div class="doc-meta">
-      <div><strong>Document No:</strong> {{ invoice.invoice_number }}</div>
-      <div><strong>PO Number:</strong> {{ invoice.po_number or '-' }}</div>
-      <div><strong>Date:</strong> {{ invoice.issue_date.strftime('%Y-%m-%d') if invoice.issue_date else 'N/A' }}</div>
-    </div>
-
     <!-- Items Table -->
     <div class="table-container">
       <table>

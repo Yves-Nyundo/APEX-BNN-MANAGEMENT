@@ -6,7 +6,7 @@ from wtforms import (
     DecimalField, TextAreaField, BooleanField, SelectField,
     DateField, FloatField, FormField, FieldList, HiddenField, ValidationError,validators
 )
-from wtforms.validators import DataRequired, Optional, NumberRange, Length, Email
+from wtforms.validators import DataRequired, Optional, NumberRange, Length, Email, URL
 from wtforms_sqlalchemy.fields import QuerySelectField
 from models_core import Supplier, InventoryStatus, Client
 from datetime import date
@@ -25,6 +25,21 @@ def get_inventory_status_choices():
         (InventoryStatus.OUT_OF_STOCK.name, "Out of Stock"),
         (InventoryStatus.PENDING_RESTOCK.name, "Pending Restock")
     ]
+class CompanySettingsForm(FlaskForm):
+    name = StringField('Company Name', validators=[DataRequired()])
+    company_id = StringField('Company ID', validators=[DataRequired()])
+    address = TextAreaField('Address', validators=[DataRequired()])
+    phone = StringField('Phone', validators=[Optional()])
+    email = StringField('Email', validators=[Optional(), Email()])
+    website = StringField(
+        'Website',
+        validators=[Optional(), URL(require_tld=True, message="Enter a valid website URL (e.g., https://example.com)")],
+        render_kw={"placeholder": "https://www.yourcompany.com"}
+    )
+    signing_person_name = StringField('Signing Person Name', validators=[Optional()])
+    signing_person_function = StringField('Function / Title', validators=[Optional()])
+
+    submit = SubmitField('Save Settings')
 # -------------------
 # Authentication Forms
 # -------------------
@@ -192,12 +207,13 @@ class InvoiceItemForm(Form):
         validators=[Optional(), NumberRange(min=0)]
     )
     comment = StringField("Comment")
-    # status = SelectField(
-    #     "Status",
-    #     choices=get_inventory_status_choices(),
-    #     validators=[DataRequired()]
-    # )
-    status = SelectField("Status", validators=[DataRequired()])
+    status = SelectField(
+        "Status",
+        choices=get_inventory_status_choices(),
+        validators=[DataRequired()],
+        default=InventoryStatus.IN_STOCK.name
+    )
+    # status = SelectField("Status", validators=[DataRequired()])
     submit = SubmitField("Add Item")
 
 

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Company Settings{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-4xl mx-auto bg-white rounded-xl shadow-lg mt-8 border border-gray-200">
+  <h1 class="text-3xl font-extrabold mb-2 text-gray-900">Company Settings</h1>
+  <p class="text-sm text-gray-500 mb-8">Update your company’s information used across invoices, contracts, and communications.</p>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="p-4 mb-6 rounded-lg text-sm flex items-center gap-2
+        {% if category == 'success' %}
+          bg-green-50 text-green-800 border-l-4 border-green-400
+        {% elif category == 'error' %}
+          bg-red-50 text-red-800 border-l-4 border-red-400
+        {% else %}
+          bg-blue-50 text-blue-800 border-l-4 border-blue-400
+        {% endif %}">
+        <span class="font-medium">{{ message }}</span>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Form using Flask-WTF -->
+  <form method="POST" novalidate class="space-y-8">
+    {{ form.hidden_tag() }} <!-- CSRF Token -->
+
+    <!-- Company Info Section -->
+    <fieldset class="space-y-6">
+      <legend class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Company Information</legend>
+
+      <!-- Company Name -->
+      <div class="space-y-1">
+        {{ form.name.label(class="block text-sm font-medium text-gray-700") }}
+        {{ form.name(class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition") }}
+        {% for error in form.name.errors %}
+          <p class="text-red-600 text-xs mt-1 flex items-center gap-1"><i>⚠️</i> {{ error }}</p>
+        {% endfor %}
+      </div>
+
+      <!-- Company ID -->
+      <div class="space-y-1">
+        {{ form.company_id.label(class="block text-sm font-medium text-gray-700") }}
+        {{ form.company_id(class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition") }}
+        {% for error in form.company_id.errors %}
+          <p class="text-red-600 text-xs mt-1 flex items-center gap-1"><i>⚠️</i> {{ error }}</p>
+        {% endfor %}
+      </div>
+
+      <!-- Address -->
+      <div class="space-y-1">
+        {{ form.address.label(class="block text-sm font-medium text-gray-700") }}
+        {{ form.address(placeholder="e.g., 123 Business Ave, Suite 100", class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition h-20", rows="3") }}
+        {% for error in form.address.errors %}
+          <p class="text-red-600 text-xs mt-1 flex items-center gap-1"><i>⚠️</i> {{ error }}</p>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <!-- Contact Info Section -->
+    <fieldset class="space-y-6">
+      <legend class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Contact Information</legend>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Phone -->
+        <div class="space-y-1">
+          {{ form.phone.label(class="block text-sm font-medium text-gray-700") }}
+          {{ form.phone(class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500") }}
+          {% for error in form.phone.errors %}
+            <p class="text-red-600 text-xs mt-1 flex items-center gap-1"><i>⚠️</i> {{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <!-- Email -->
+        <div class="space-y-1">
+          {{ form.email.label(class="block text-sm font-medium text-gray-700") }}
+          {{ form.email(class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500") }}
+          {% for error in form.email.errors %}
+            <p class="text-red-600 text-xs mt-1 flex items-center gap-1"><i>⚠️</i> {{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <!-- Website -->
+        <div class="space-y-1">
+          {{ form.website.label(class="block text-sm font-medium text-gray-700") }}
+          {{ form.website(placeholder="https://example.com", class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500") }}
+          {% for error in form.website.errors %}
+            <p class="text-red-600 text-xs mt-1 flex items-center gap-1"><i>⚠️</i> {{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Signing Authority Section -->
+    <fieldset class="space-y-6">
+      <legend class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Signing Authority</legend>
+      <p class="text-sm text-gray-500 mb-4">The person authorized to sign legal documents on behalf of the company.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Name -->
+        <div class="space-y-1">
+          {{ form.signing_person_name.label(class="block text-sm font-medium text-gray-700") }}
+          {{ form.signing_person_name(class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500") }}
+          {% for error in form.signing_person_name.errors %}
+            <p class="text-red-600 text-xs mt-1 flex items-center gap-1"><i>⚠️</i> {{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <!-- Function -->
+        <div class="space-y-1">
+          {{ form.signing_person_function.label(class="block text-sm font-medium text-gray-700") }}
+          {{ form.signing_person_function(class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500") }}
+          {% for error in form.signing_person_function.errors %}
+            <p class="text-red-600 text-xs mt-1 flex items-center gap-1"><i>⚠️</i> {{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Submit Actions -->
+    <div class="flex flex-col sm:flex-row gap-3 pt-6">
+      {{ form.submit(class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 self-start") }}
+      <a href="{{ url_for('dashboard') }}" class="px-6 py-2.5 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-md transition text-center self-start">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

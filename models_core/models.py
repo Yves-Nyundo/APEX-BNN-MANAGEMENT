@@ -82,6 +82,8 @@ class InvoiceItem(db.Model):
         return f"<InvoiceItem {self.description[:30]}... x{self.quantity}>"
 class CompanySettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.String(50), nullable=False, default="APEX-BNN-001")
+    # company_name = db.Column(db.String(100), nullable=False)
     name = db.Column(db.String(128), nullable=False)
     signature_image_path = db.Column(db.String(500))
     signature_description = db.Column(db.String(255))
@@ -89,8 +91,12 @@ class CompanySettings(db.Model):
     signing_person_name = db.Column(db.String(100))
     signing_person_function = db.Column(db.String(100))
     logo_image_path = db.Column(db.String(500))
-
-
+    address = db.Column(db.Text)
+    phone = db.Column(db.String(20))
+    email = db.Column(db.String(100))
+    website = db.Column(db.String(255))
+def __repr__(self):
+        return f"<CompanySettings {self.name}>"
 
 
 class Supplier(db.Model):
@@ -264,6 +270,8 @@ def get_or_create_company_settings():
     if not settings:
         settings = CompanySettings(
             name="APEX BNN",
+            # company_name="APEX BNN Services",
+            company_id="APEX-BNN-001",
             signing_person_name="Authorized Signatory",
             signing_person_function="Finance Manager"
         )

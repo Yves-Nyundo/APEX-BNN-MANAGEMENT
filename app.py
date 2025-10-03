@@ -119,6 +119,7 @@ from forms import (
     InvoiceItemForm,
     GenerateDocumentForm,
     CreateUserForm,
+    CompanySettingsForm,
     get_inventory_status_choices,
 )
 
@@ -223,23 +224,7 @@ def get_item_initials(description):
 
 
 
-# def generate_doc_number(doc_type, items):
-#     # Get initials from first item
-#     item_desc = items[0]['description'] if items else ""
-#     initials = get_item_initials(item_desc)
 
-#     # Map document type
-#     prefix_map = {
-#         'invoice': 'INV',
-#         'proforma': 'PROF',
-#         'delivery_note': 'DELIV'
-#     }
-#     doc_prefix = prefix_map.get(doc_type, 'DOC')
-
-#     # Format month/year: SEP25
-#     month_year = datetime.now().strftime('%b%y').upper()  # e.g., SEP25
-
-#     return f"APEX-{doc_prefix}-{initials}-{month_year}"
 
 
 
@@ -812,26 +797,6 @@ def delete_procurement_item(item_id):
 # Inventory
 # ========================
 
-# @app.route('/inventory_items')
-# @login_required
-# def list_inventory():
-#     q = request.args.get('q', '').strip()
-#     status = request.args.get('status', '')
-#     category = request.args.get('category', '')
-#     query = OurProductService.query
-#     if q:
-#         query = query.filter(OurProductService.name.ilike(f"%{q}%"))
-#     if status == 'low_stock':
-#         query = query.filter(OurProductService.quantity_on_hand <= OurProductService.reorder_point)
-#     if status == 'out_of_stock':
-#         query = query.filter(OurProductService.quantity_on_hand == 0)
-#     if category:
-#         query = query.filter(OurProductService.category == category)
-#     items = query.all()
-#     categories = db.session.query(OurProductService.category).distinct().all()
-#     categories = [c[0] for c in categories if c[0]]
-#     delete_form = DeleteItemForm()
-#     return render_template('inventory/list.html', items=items, categories=categories, delete_form=delete_form)
 
 @app.route('/inventory_items')
 @login_required
@@ -1602,11 +1567,6 @@ def view_document(invoice_id):
     company_settings = get_or_create_company_settings()
     return render_template('view_document.html', invoice=invoice, company_settings=company_settings)
 
-
-
-
-
-
 @app.route('/download_document/<int:invoice_id>')
 @login_required
 def download_document(invoice_id):
@@ -1813,6 +1773,76 @@ def test_pdf():
 # ========================
 # Company Settings
 # ========================
+@app.route('/admin/company', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_company_settings():
+    settings = CompanySettings.query.first()
+    if not settings:
+        settings = CompanySettings()
+        db.session.add(settings)
+        db.session.commit()
+
+    form = CompanySettingsForm()
+
+    if form.validate_on_submit():
+        try:
+            settings.name = form.name.data.strip()
+            settings.company_id = form.company_id.data.strip()
+            settings.address = form.address.data.strip()
+            settings.phone = form.phone.data.strip() if form.phone.data else None
+            settings.email = form.email.data.strip() if form.email.data else None
+            settings.website = form.website.data.strip() if form.website.data else None
+            settings.signing_person_name = form.signing_person_name.data.strip() if form.signing_person_name.data else None
+            settings.signing_person_function = form.signing_person_function.data.strip() if form.signing_person_function.data else None
+
+            db.session.commit()
+            flash("✅ Company settings updated successfully.", "success")
+            return redirect(url_for('admin_company_settings'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash("❌ Failed to save settings. Please try again.", "error")
+            print(f"Error saving company settings: {e}")
+
+    elif request.method == 'GET':
+        # Populate form with current data
+        form.name.data = settings.name
+        form.company_id.data = settings.company_id
+        form.address.data = settings.address
+        form.phone.data = settings.phone
+        form.email.data = settings.email
+        form.website.data = settings.website
+        form.signing_person_name.data = settings.signing_person_name
+        form.signing_person_function.data = settings.signing_person_function
+
+    return render_template('admin/company_settings.html', form=form)
+# @app.route('/settings/company', methods=['GET', 'POST'])
+# @login_required
+# @role_required(['admin'])
+# def update_company_settings():
+#     settings = CompanySettings.query.first()
+#     if not settings:
+#         settings = CompanySettings()
+#         db.session.add(settings)
+
+#     if request.method == 'POST':
+#         try:
+#             settings.company_name = request.form['company_name'].strip()
+#             settings.company_id = request.form['company_id'].strip()
+#             settings.phone = request.form.get('phone', '').strip()
+#             settings.email = request.form.get('email', '').strip()
+#             settings.signing_person_name = request.form.get('signing_person_name', '').strip()
+#             settings.signing_person_function = request.form.get('signing_person_function', '').strip()
+
+#             db.session.commit()
+#             flash("✅ Company settings updated.", "success")
+#             return redirect(url_for('update_company_settings'))
+#         except Exception as e:
+#             db.session.rollback()
+#             flash("❌ Error saving settings.", "error")
+
+#     return render_template('settings/company.html', settings=settings)
 
 @app.route('/upload_company_stamp', methods=['GET', 'POST'])
 @login_required
